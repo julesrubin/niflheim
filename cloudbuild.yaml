@@ -24,8 +24,6 @@ steps:
     - '-c'
     - |
       cd $_SUBFOLDER
-      echo "***********************"
-      echo "Initializing Terraform in $_SUBFOLDER directory..."
       terraform init -input=false -no-color -upgrade -backend-config=init/backend.tfvars
 # [END tf-init]
 
@@ -37,11 +35,6 @@ steps:
     - '-c'
     - |
       cd $_SUBFOLDER
-      echo "***********************"
-      echo "Creating Terraform plan in $_SUBFOLDER directory..."
-      pwd
-      ls -la
-      ls config -la
       terraform plan -out changes.tfplan -var-file=config/variable.tfvars
 # [END tf-plan]
 
