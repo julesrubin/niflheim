@@ -22,8 +22,8 @@ steps:
       echo "Detecting changes in folders..."
       # Use grep -oE instead of -oP for extended regex support.
       CHANGED_FOLDERS=$(git diff --name-only $COMMIT_SHA^ $COMMIT_SHA | grep -oE 'gcp/[^[:space:]]+' | sort -u)
-      echo "Changed folders: $CHANGED_FOLDERS"
-      echo "$CHANGED_FOLDERS" > /workspace/changed_folders.txt
+      echo "Changed folders: $$CHANGED_FOLDERS"
+      echo "$$CHANGED_FOLDERS" > /workspace/changed_folders.txt
       cat /workspace/changed_folders.txt
 # [END Detect changes in specific folders]
 
