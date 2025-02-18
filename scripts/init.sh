@@ -39,8 +39,10 @@ mkdir -p $INIT_DIR
 # Create the config folder if it doesn't exist and add the variables.tfvars file
 mkdir -p $CONFIG_DIR
 # Create the variables.tfvars file if it doesn't exist
-if [ ! -f "$CONFIG_DIR/variables.tfvars" ]; then
-    touch $CONFIG_DIR/variables.tfvars
+if [ ! -f "$CONFIG_DIR/variable.tfvars" ]; then
+    touch $CONFIG_DIR/variable.tfvars
+    echo "project_id = \"$PROJECT_ID\"" > $CONFIG_DIR/variable.tfvars
+    echo "region = \"europe-west1\"" >> $CONFIG_DIR/variable.tfvars
 fi
 
 # Write the backend.tfvars file in the correct location
