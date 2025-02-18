@@ -15,7 +15,7 @@ steps:
 
 # [START Detect Changed Folders]
 - id: 'Detect Changed Folders'
-  name: 'alpine'
+  name: 'gcr.io/cloud-builders/git'
   entrypoint: sh
   args:
     - '-c'
