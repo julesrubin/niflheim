@@ -12,9 +12,8 @@ steps:
       echo "Dry Run           : ${_APPLY_CHANGES}"
       echo "Subfolder         : ${_SUBFOLDER}"
       echo "***********************"
-      cd scripts
-      chmod +x init.sh
-      ./init.sh ${_PROJECT_ID} ${_SUBFOLDER}
+      chmod +x ./scripts/init.sh
+      ./scripts/init.sh ${_PROJECT_ID} ${_SUBFOLDER}
 # [END project-init]
 
 # [START tf-init]
