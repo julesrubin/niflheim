@@ -24,7 +24,10 @@ steps:
   args:
     - '-c'
     - |
-      terraform -chdir=$_SUBFOLDER init -input=false -no-color -upgrade -backend-config=init/backend.tfvars
+      cd $_SUBFOLDER
+      echo "***********************"
+      echo "Initializing Terraform in $_SUBFOLDER directory..."
+      terraform init -input=false -no-color -upgrade -backend-config=init/backend.tfvars
 # [END tf-init]
 
 # [START tf-plan]
@@ -34,7 +37,10 @@ steps:
   args:
     - '-c'
     - |
-      terraform -chdir=$_SUBFOLDER plan -out changes.tfplan -var-file=config/variable.tfvars
+      cd $_SUBFOLDER
+      echo "***********************"
+      echo "Creating Terraform plan..."
+      terraform plan -out changes.tfplan -var-file=config/variable.tfvars
 # [END tf-plan]
 
 # [START tf-apply]
@@ -45,7 +51,10 @@ steps:
     - '-c'
     - |
       if [ "${_APPLY_CHANGES}" == "true" ]; then
-        terraform -chdir=$_SUBFOLDER apply -input=false -no-color -auto-approve changes.tfplan
+        cd $_SUBFOLDER
+        echo "***********************"
+        echo "Applying Terraform changes..."
+        terraform apply -input=false -no-color -auto-approve changes.tfplan
       else
         echo "Skipping apply step (Dry-run mode enabled)"
       fi
