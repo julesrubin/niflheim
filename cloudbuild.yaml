@@ -24,7 +24,7 @@ steps:
   args:
     - '-c'
     - |
-      terraform -chdir=${_SUBFOLDER} init -input=false -no-color -upgrade -backend-config=init/backend.tfvars
+      terraform -chdir=${_SUBFOLDER} init -input=false -no-color -upgrade -backend-config=init/backend.tfvars -reconfigure
 # [END tf-init]
 
 # [START tf-plan]

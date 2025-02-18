@@ -6,7 +6,7 @@
 export PROJECT_ID=$(gcloud info --format='value(config.project)')
 
 # Extract the last segment of the subfolder path as PREFIX
-if [ -z "$2" ]; then
+if [ "$2" == "gcp" ]; then
     INIT_DIR="./gcp/init"
     PREFIX=""
     CONFIG_DIR="./gcp/config"
@@ -38,7 +38,7 @@ mkdir -p $INIT_DIR
 
 # Create the config folder if it doesn't exist and add the variables.tfvars file
 mkdir -p $CONFIG_DIR
-echo "project_id = \"$PROJECT_ID\"" > $CONFIG_DIR/variables.tfvars
+echo "project_id = \"$PROJECT_ID\"" > $CONFIG_DIR/variable.tfvars
 
 # Write the backend.tfvars file in the correct location
 echo "bucket = \"$TERRAFORM_BUCKET\"" > $BACKEND_FILE
