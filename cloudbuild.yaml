@@ -21,9 +21,9 @@ steps:
       echo "********************************************"
       echo "Detecting changes in folders..."
       CHANGED_FOLDERS=$(git diff --name-only $COMMIT_SHA^ $COMMIT_SHA | grep -oP 'gcp/\S+' | sort -u)
-      echo "Changed folders: $CHANGED_FOLDERS"
+      echo "Changed folders: $$CHANGED_FOLDERS"
       echo "********************************************"
-      echo $CHANGED_FOLDERS > /workspace/changed_folders.txt
+      echo $$CHANGED_FOLDERS > /workspace/changed_folders.txt
 # [END Detect changes in specific folders]
 
 # [START Terraform Init and Plan for Changed Folders]
