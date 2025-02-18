@@ -38,7 +38,10 @@ mkdir -p $INIT_DIR
 
 # Create the config folder if it doesn't exist and add the variables.tfvars file
 mkdir -p $CONFIG_DIR
-echo "project_id = \"$PROJECT_ID\"" > $CONFIG_DIR/variable.tfvars
+# Create the variables.tfvars file if it doesn't exist
+if [ ! -f "$CONFIG_DIR/variables.tfvars" ]; then
+    touch $CONFIG_DIR/variables.tfvars
+fi
 
 # Write the backend.tfvars file in the correct location
 echo "bucket = \"$TERRAFORM_BUCKET\"" > $BACKEND_FILE
