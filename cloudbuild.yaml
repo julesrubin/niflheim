@@ -40,6 +40,8 @@ steps:
       echo "***********************"
       echo "Creating Terraform plan in $_SUBFOLDER directory..."
       pwd
+      ls -la
+      ls config -la
       terraform plan -out changes.tfplan -var-file=config/variable.tfvars
 # [END tf-plan]
 
