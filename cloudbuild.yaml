@@ -24,7 +24,7 @@ steps:
   args:
     - '-c'
     - |
-      terraform -chdir=${_SUBFOLDER} init -input=false -no-color -upgrade -backend-config=init/backend.tfvars -reconfigure
+      terraform -chdir=$_SUBFOLDER init -input=false -no-color -upgrade -backend-config=init/backend.tfvars
 # [END tf-init]
 
 # [START tf-plan]
@@ -34,7 +34,7 @@ steps:
   args:
     - '-c'
     - |
-      terraform -chdir=${_SUBFOLDER} plan -out changes.tfplan -var-file=config/variable.tfvars
+      terraform -chdir=$_SUBFOLDER plan -out changes.tfplan -var-file=config/variable.tfvars
 # [END tf-plan]
 
 # [START tf-apply]
@@ -45,7 +45,7 @@ steps:
     - '-c'
     - |
       if [ "${_APPLY_CHANGES}" == "true" ]; then
-        terraform -chdir=${_SUBFOLDER} apply -input=false -no-color -auto-approve changes.tfplan
+        terraform -chdir=$_SUBFOLDER apply -input=false -no-color -auto-approve changes.tfplan
       else
         echo "Skipping apply step (Dry-run mode enabled)"
       fi
