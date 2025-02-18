@@ -23,7 +23,7 @@ steps:
       echo "********************************************"
       echo "Detecting changes in folders..."
       # Use git diff with proper syntax to get the changed files
-      CHANGED_FOLDERS=$(git diff --name-only origin/main -- $COMMIT_SHA | grep -o 'gcp/\S+' | sort -u)
+      CHANGED_FOLDERS=$(git diff --name-only $COMMIT_SHA^ -- $COMMIT_SHA | grep -o 'gcp/\S+' | sort -u)
       echo "Changed folders: $$CHANGED_FOLDERS"
       echo "********************************************"
       echo $$CHANGED_FOLDERS > /workspace/changed_folders.txt
