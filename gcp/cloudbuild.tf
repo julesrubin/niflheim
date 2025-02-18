@@ -1,6 +1,7 @@
 variable "gcp_subfolders" {
-  type    = list(string)
-  default = ["gcp/apis", "gcp/portfolio", "gcp"]
+  type = list(string)
+  #   default = ["gcp/apis", "gcp/portfolio", "gcp"]
+  default = ["gcp"]
 }
 
 locals {
