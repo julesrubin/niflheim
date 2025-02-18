@@ -20,6 +20,7 @@ steps:
   args:
     - '-c'
     - |
+      git fetch --unshallow || true
       echo "********************************************"
       echo "Detecting changes in folders..."
       CHANGED_FILES=$(git diff --name-only HEAD~1 -- HEAD)
