@@ -9,9 +9,11 @@ export PROJECT_ID=$(gcloud info --format='value(config.project)')
 if [ -z "$2" ]; then
     INIT_DIR="./gcp/init"
     PREFIX=""
+    CONFIG_DIR="./gcp/config"
 else
     INIT_DIR="./$2/init"
     PREFIX=$(basename "$2")
+    CONFIG_DIR="./$2/config"
 fi
 
 BACKEND_FILE="$INIT_DIR/backend.tfvars"
@@ -33,6 +35,10 @@ gsutil ls -b -p $PROJECT_ID gs://$TERRAFORM_BUCKET || gsutil mb -l eu -p $PROJEC
 
 # Create init folder if it doesn't exist
 mkdir -p $INIT_DIR
+
+# Create the config folder if it doesn't exist and add the variables.tfvars file
+mkdir -p $CONFIG_DIR
+echo "project_id = \"$PROJECT_ID\"" > $CONFIG_DIR/variables.tfvars
 
 # Write the backend.tfvars file in the correct location
 echo "bucket = \"$TERRAFORM_BUCKET\"" > $BACKEND_FILE
