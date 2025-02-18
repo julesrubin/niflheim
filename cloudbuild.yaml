@@ -22,7 +22,7 @@ steps:
     - |
       echo "********************************************"
       echo "Detecting changes in folders..."
-      CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+      CHANGED_FILES=$(git diff --name-only HEAD~1 -- HEAD)
       IMPACTED_SUBFOLDERS=$(echo "$$CHANGED_FILES" | awk -F'/' '/^gcp\// {print $2}' | sort -u)
       echo "Changed folders: $$CHANGED_FOLDERS"
       echo "********************************************"
