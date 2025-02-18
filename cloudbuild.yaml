@@ -1,0 +1,87 @@
+steps:
+- id: 'Set Context'
+  name: 'alpine'
+  entrypoint: sh
+  args:
+    - '-c'
+    - |
+      echo "********************************************"
+      echo "PROJECT           : $PROJECT_ID"
+      echo "BRANCH            : $BRANCH_NAME"
+      echo "MODE              : $([[ ${_APPLY_CHANGES} = 'true' ]] && echo 'LIVE' || echo 'DRY RUN')"
+      echo "********************************************"
+
+# [START Detect changes in specific folders]
+- id: 'Detect Changed Folders'
+  name: 'alpine'
+  entrypoint: sh
+  args:
+    - '-c'
+    - |
+      echo "********************************************"
+      echo "Detecting changes in folders..."
+      CHANGED_FOLDERS=$(git diff --name-only $COMMIT_SHA^ $COMMIT_SHA | grep -oP 'gcp/\S+' | sort -u)
+      echo "Changed folders: $CHANGED_FOLDERS"
+      echo "********************************************"
+      echo $CHANGED_FOLDERS > /workspace/changed_folders.txt
+# [END Detect changes in specific folders]
+
+# [START Terraform Init and Plan for Changed Folders]
+- id: 'Terraform Plan for Changed Folders'
+  name: 'hashicorp/terraform:1.6.6'
+  entrypoint: sh
+  args:
+    - '-c'
+    - |
+      
+      while read -r folder; do
+        echo "********************************************"
+        echo "BEGIN: TERRAFORM PLAN FOR $folder"
+        echo "********************************************"
+        
+        # Initialize Terraform
+        TF_IN_AUTOMATION=1 terraform -chdir=$folder init -upgrade -backend-config=$folder/init/backend.tfvars -reconfigure
+        
+        # Run Plan
+        TF_IN_AUTOMATION=1 terraform -chdir=$folder plan -var-file=env/$_ENV.tfvars
+        
+        echo "********************************************"
+        echo "END: TERRAFORM PLAN FOR $folder"
+        echo "********************************************"
+      done < /workspace/changed_folders.txt
+# [END Terraform Init and Plan for Changed Folders]
+
+# [START Terraform Apply for Changed Folders]
+- id: 'Terraform Apply for Changed Folders'
+  name: 'hashicorp/terraform:1.6.6'
+  entrypoint: sh
+  args:
+    - '-c'
+    - |
+      if [ "${_APPLY_CHANGES}" = 'true' ]; then
+        
+        while read -r folder; do
+          echo "********************************************"
+          echo "BEGIN: TERRAFORM APPLY FOR $folder"
+          echo "********************************************"
+          
+          # Initialize Terraform
+          TF_IN_AUTOMATION=1 terraform -chdir=$folder init -upgrade -backend-config=$folder/init/backend.tfvars -reconfigure
+          
+          # Run Apply
+          TF_IN_AUTOMATION=1 terraform -chdir=$folder apply -auto-approve -var-file=env/$_ENV.tfvars -input=false -no-color
+          
+          echo "********************************************"
+          echo "END: TERRAFORM APPLY FOR $folder"
+          echo "********************************************"
+        done < /workspace/changed_folders.txt
+      else
+        echo "********************************************"
+        echo "Skipping apply (DRY RUN)"
+        echo "********************************************"
+      fi
+# [END Terraform Apply for Changed Folders]
+
+timeout: 5400s
+options:
+  logging: CLOUD_LOGGING_ONLY
