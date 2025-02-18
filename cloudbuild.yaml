@@ -13,17 +13,18 @@ steps:
 
 # [START Detect changes in specific folders]
 - id: 'Detect Changed Folders'
-  name: 'alpine'
+  name: 'gcr.io/cloud-builders/git'
   entrypoint: sh
   args:
     - '-c'
     - |
       echo "********************************************"
       echo "Detecting changes in folders..."
-      CHANGED_FOLDERS=$(git diff --name-only $COMMIT_SHA^ $COMMIT_SHA | grep -oP 'gcp/\S+' | sort -u)
-      echo "Changed folders: $$CHANGED_FOLDERS"
-      echo "********************************************"
-      echo $$CHANGED_FOLDERS > /workspace/changed_folders.txt
+      # Use grep -oE instead of -oP for extended regex support.
+      CHANGED_FOLDERS=$(git diff --name-only $COMMIT_SHA^ $COMMIT_SHA | grep -oE 'gcp/[^[:space:]]+' | sort -u)
+      echo "Changed folders: $CHANGED_FOLDERS"
+      echo "$CHANGED_FOLDERS" > /workspace/changed_folders.txt
+      cat /workspace/changed_folders.txt
 # [END Detect changes in specific folders]
 
 # [START Terraform Init and Plan for Changed Folders]
@@ -33,20 +34,19 @@ steps:
   args:
     - '-c'
     - |
-      
       while read -r folder; do
         echo "********************************************"
-        echo "BEGIN: TERRAFORM PLAN FOR $folder"
+        echo "BEGIN: TERRAFORM PLAN FOR $$folder"
         echo "********************************************"
         
-        # Initialize Terraform
-        TF_IN_AUTOMATION=1 terraform -chdir=$folder init -upgrade -backend-config=$folder/init/backend.tfvars -reconfigure
+        # Initialize Terraform with the proper -chdir flag (equals sign, quoted, and using runtime variable $$folder)
+        TF_IN_AUTOMATION=1 terraform -chdir="$$folder" init -upgrade -backend-config="$$folder/init/backend.tfvars" -reconfigure
         
-        # Run Plan
-        TF_IN_AUTOMATION=1 terraform -chdir=$folder plan -var-file=env/$_ENV.tfvars
+        # Run Terraform plan (using a production var file, adjust the name if needed)
+        TF_IN_AUTOMATION=1 terraform -chdir="$$folder" plan -var-file=env/production.tfvars
         
         echo "********************************************"
-        echo "END: TERRAFORM PLAN FOR $folder"
+        echo "END: TERRAFORM PLAN FOR $$folder"
         echo "********************************************"
       done < /workspace/changed_folders.txt
 # [END Terraform Init and Plan for Changed Folders]
@@ -58,21 +58,20 @@ steps:
   args:
     - '-c'
     - |
-      if [ "${_APPLY_CHANGES}" = 'true' ]; then
-        
+      if [ "${_APPLY_CHANGES}" = "true" ]; then
         while read -r folder; do
           echo "********************************************"
-          echo "BEGIN: TERRAFORM APPLY FOR $folder"
+          echo "BEGIN: TERRAFORM APPLY FOR $$folder"
           echo "********************************************"
           
-          # Initialize Terraform
-          TF_IN_AUTOMATION=1 terraform -chdir=$folder init -upgrade -backend-config=$folder/init/backend.tfvars -reconfigure
+          # Initialize Terraform for the folder
+          TF_IN_AUTOMATION=1 terraform -chdir="$$folder" init -upgrade -backend-config="$$folder/init/backend.tfvars" -reconfigure
           
-          # Run Apply
-          TF_IN_AUTOMATION=1 terraform -chdir=$folder apply -auto-approve -var-file=env/$_ENV.tfvars -input=false -no-color
+          # Run Terraform apply
+          TF_IN_AUTOMATION=1 terraform -chdir="$$folder" apply -auto-approve -var-file=env/production.tfvars -input=false -no-color
           
           echo "********************************************"
-          echo "END: TERRAFORM APPLY FOR $folder"
+          echo "END: TERRAFORM APPLY FOR $$folder"
           echo "********************************************"
         done < /workspace/changed_folders.txt
       else
