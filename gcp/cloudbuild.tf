@@ -1,19 +1,22 @@
 locals {
   applications = {
     root = {
-      paths = ["gcp/**"]
+      included_files = ["gcp/**"]
+      ignored_files  = ["gcp/apis/**", "gcp/portfolio/**"]
       substitutions = {
         _SUBFOLDER = "gcp" # Explicitly define the Terraform root
       }
     },
     portfolio = {
-      paths = ["gcp/portfolio/**", "frontend/portfolio/**"]
+      included_files = ["gcp/portfolio/**", "frontend/portfolio/**"]
+      ignored_files  = []
       substitutions = {
         _SUBFOLDER = "gcp/portfolio" # Explicitly define the Terraform root
       }
     },
     apis = {
-      paths = ["gcp/apis/**"]
+      included_files = ["gcp/apis/**"]
+      ignored_files  = []
       substitutions = {
         _SUBFOLDER = "gcp/apis" # Explicitly define the Terraform root
       }
@@ -52,8 +55,8 @@ resource "google_cloudbuild_trigger" "tf_plan" {
   filename        = "cloudbuild.yaml"
   service_account = google_service_account.service_account["cloud-build-deploy"].id
 
-  # Watch all files in the application's paths (including nested files)
-  included_files = [for path in each.value.paths : "${path}/**"]
+  included_files = each.value.included_files
+  ignored_files  = each.value.ignored_files
 
   # Trigger on pull requests
   repository_event_config {
@@ -83,7 +86,8 @@ resource "google_cloudbuild_trigger" "tf_apply" {
   filename        = "cloudbuild.yaml"
   service_account = google_service_account.service_account["cloud-build-deploy"].id
 
-  included_files = each.value.paths
+  included_files = each.value.included_files
+  ignored_files  = each.value.ignored_files
 
   # Trigger on pushes
   repository_event_config {
