@@ -5,7 +5,7 @@
 
 export PROJECT_ID=$(gcloud info --format='value(config.project)')
 export PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format='value(projectNumber)')
-export REPOSITORY_NAME=$(basename `git rev-parse --show-toplevel`)
+export REPOSITORY_NAME="niflheim"
 
 # Extract the last segment of the subfolder path as PREFIX
 if [ "$2" == "gcp" ]; then
