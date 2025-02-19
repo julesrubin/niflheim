@@ -34,7 +34,7 @@ steps:
           if [ -d "$folder" ]; then
             echo "Building Docker image for $folder..."
             cd $folder
-            docker build -t $_REGION-docker.pkg.dev/$_PROJECT_ID/$_ARTIFACT_REGISTRY/$folder .
+            docker build -t $_REGION-docker.pkg.dev/$_PROJECT_ID/$_ARTIFACT_REGISTRY/$_CONTEXT .
             docker push $_REGION-docker.pkg.dev/$_PROJECT_ID/$_ARTIFACT_REGISTRY/$_CONTEXT
           else
             echo "Folder $folder does not exist or does not contain Dockerfile"
