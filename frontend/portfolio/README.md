@@ -9,3 +9,4 @@ A simple portfolio starter theme built with React and Tailwind CSS.
 ## Template Credits
 
 Russel Masato - [Original Repo](https://github.com/Russell1130/react-tailwind)
+
