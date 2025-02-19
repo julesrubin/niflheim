@@ -4,6 +4,8 @@
 # Pass the project_id and a subfolder path (e.g., gcp/apis).
 
 export PROJECT_ID=$(gcloud info --format='value(config.project)')
+export PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format='value(projectNumber)')
+export REPOSITORY_NAME=$(basename `git rev-parse --show-toplevel`)
 
 # Extract the last segment of the subfolder path as PREFIX
 if [ "$2" == "gcp" ]; then
@@ -17,7 +19,7 @@ else
 fi
 
 BACKEND_FILE="$INIT_DIR/backend.tfvars"
-TERRAFORM_BUCKET=$PROJECT_ID-niflheim-tfstate
+TERRAFORM_BUCKET=$PROJECT_ID-$REPOSITORY_NAME-tfstate
 
 echo "******"
 echo "ProjectID value: $PROJECT_ID"
@@ -36,7 +38,10 @@ mkdir -p $CONFIG_DIR
 if [ ! -f "$CONFIG_DIR/variable.tfvars" ]; then
     touch $CONFIG_DIR/variable.tfvars
     echo "project_id = \"$PROJECT_ID\"" > $CONFIG_DIR/variable.tfvars
+    echo "project_number = \"$PROJECT_NUMBER\"" >> $CONFIG_DIR/variable.tfvars
     echo "region = \"europe-west1\"" >> $CONFIG_DIR/variable.tfvars
+    echo "repository_name = \"$REPOSITORY_NAME\"" >> $CONFIG_DIR/variable.tfvars
+    echo "context = \"$PREFIX\"" >> $CONFIG_DIR/variable.tfvars
 fi
 
 # Write the backend.tfvars file in the correct location
