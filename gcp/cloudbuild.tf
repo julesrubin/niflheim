@@ -4,21 +4,25 @@ locals {
       included_files = ["gcp/**"]
       ignored_files  = ["gcp/apis/**", "gcp/portfolio/**"]
       substitutions = {
-        _SUBFOLDER = "gcp" # Explicitly define the Terraform root
+        _SUBFOLDER      = "gcp"
+        _DOCKER_FOLDERS = ""
       }
     },
     portfolio = {
       included_files = ["gcp/portfolio/**", "frontend/portfolio/**"]
       ignored_files  = []
       substitutions = {
-        _SUBFOLDER = "gcp/portfolio" # Explicitly define the Terraform root
+        _SUBFOLDER         = "gcp/portfolio"
+        _DOCKER_FOLDERS    = "frontend/portfolio"
+        _ARTIFACT_REGISTRY = "sandbox-jrubin-gcr-niflheim-portfolio"
       }
     },
     apis = {
       included_files = ["gcp/apis/**"]
       ignored_files  = []
       substitutions = {
-        _SUBFOLDER = "gcp/apis" # Explicitly define the Terraform root
+        _SUBFOLDER      = "gcp/apis"
+        _DOCKER_FOLDERS = ""
       }
     }
   }
@@ -71,7 +75,8 @@ resource "google_cloudbuild_trigger" "tf_plan" {
     local.substitutions,
     each.value.substitutions, # Application-specific substitutions
     {
-      _APPLY_CHANGES = local.plan_config.apply_changes
+      _APPLY_CHANGES = local.plan_config.apply_changes,
+      _CONTEXT       = each.key
     }
   )
 }
