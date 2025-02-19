@@ -37,7 +37,7 @@ const AppBanner = () => {
 					}}
 					className="font-general-medium mt-4 text-lg md:text-xl lg:text-2xl xl:text-3xl text-center sm:text-left leading-normal text-gray-500 dark:text-gray-200"
 				>
-					Data and AI student at EFREI Paris
+					Data Engineer and GenAI enthusiast
 				</motion.p>
 				<motion.div
 					initial={{ opacity: 0 }}
