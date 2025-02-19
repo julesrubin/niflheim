@@ -108,6 +108,7 @@ resource "google_cloudbuild_trigger" "tf_apply" {
     each.value.substitutions, # Application-specific substitutions
     {
       _APPLY_CHANGES = local.apply_config.apply_changes
+      _CONTEXT       = each.key
     }
   )
 }
