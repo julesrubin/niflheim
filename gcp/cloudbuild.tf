@@ -102,9 +102,3 @@ resource "google_cloudbuild_trigger" "tf_apply" {
     }
   )
 }
-
-resource "google_storage_bucket" "temp" {
-  name     = "temporary-storage-${var.project_id}"
-  location = var.region
-
-}
