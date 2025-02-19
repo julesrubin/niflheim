@@ -6,18 +6,18 @@ locals {
         _SUBFOLDER = "gcp" # Explicitly define the Terraform root
       }
     },
-    # portfolio = {
-    #   paths = ["gcp/portfolio/**", "frontend/portfolio/**"]
-    #   substitutions = {
-    #     _SUBFOLDER = "gcp/portfolio" # Explicitly define the Terraform root
-    #   }
-    # },
-    # apis = {
-    #   paths = ["gcp/apis/**"]
-    #   substitutions = {
-    #     _SUBFOLDER = "gcp/apis" # Explicitly define the Terraform root
-    #   }
-    # }
+    portfolio = {
+      paths = ["gcp/portfolio/**", "frontend/portfolio/**"]
+      substitutions = {
+        _SUBFOLDER = "gcp/portfolio" # Explicitly define the Terraform root
+      }
+    },
+    apis = {
+      paths = ["gcp/apis/**"]
+      substitutions = {
+        _SUBFOLDER = "gcp/apis" # Explicitly define the Terraform root
+      }
+    }
   }
 
   # Shared configurations
