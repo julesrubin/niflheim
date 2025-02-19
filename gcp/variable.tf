@@ -11,13 +11,16 @@ variable "project_number" {
 variable "region" {
   description = "The GCP region"
   type        = string
-  default     = "europe-west1"
 }
 
 variable "repository_name" {
   description = "The name of the repository"
   type        = string
+}
 
+variable "context" {
+  description = "The context of the project"
+  type        = string
 }
 
 variable "owner" {
