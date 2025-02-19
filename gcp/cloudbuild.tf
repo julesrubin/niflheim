@@ -1,77 +1,104 @@
-variable "gcp_subfolders" {
-  type = list(string)
-  #   default = ["gcp/apis", "gcp/portfolio", "gcp"]
-  default = ["gcp"]
-}
-
 locals {
-  # Base substitutions
+  applications = {
+    root = {
+      paths = ["gcp/**"]
+      substitutions = {
+        _SUBFOLDER = "gcp" # Explicitly define the Terraform root
+      }
+    },
+    # portfolio = {
+    #   paths = ["gcp/portfolio/**", "frontend/portfolio/**"]
+    #   substitutions = {
+    #     _SUBFOLDER = "gcp/portfolio" # Explicitly define the Terraform root
+    #   }
+    # },
+    # apis = {
+    #   paths = ["gcp/apis/**"]
+    #   substitutions = {
+    #     _SUBFOLDER = "gcp/apis" # Explicitly define the Terraform root
+    #   }
+    # }
+  }
+
+  # Shared configurations
+  plan_config = {
+    name_suffix   = "tf-plan"
+    event_type    = "pull_request"
+    branch_regex  = "^main"
+    apply_changes = "false" # Do not auto-apply
+  }
+
+  apply_config = {
+    name_suffix   = "tf-apply"
+    event_type    = "push"
+    branch_regex  = "^main"
+    apply_changes = "true" # Auto-apply after plan
+  }
+
+  # Base substitutions (shared across all triggers)
   substitutions = {
     _PROJECT_ID = var.project_id
     _REGION     = var.region
   }
-
-  # Define triggers as a map
-  triggers = {
-    plan = {
-      name_suffix   = "tf-plan"
-      event_type    = "pull_request"
-      branch_regex  = "^main"
-      apply_changes = "false"
-    }
-    apply = {
-      name_suffix   = "tf-apply"
-      event_type    = "push"
-      branch_regex  = "^main"
-      apply_changes = "true"
-    }
-  }
 }
-resource "google_cloudbuild_trigger" "tf" {
-  for_each = { for combo in setproduct(var.gcp_subfolders, keys(local.triggers)) :
-    "${replace(combo[0], "/", "-")}-${combo[1]}" => {
-      subfolder    = combo[0]
-      trigger_type = combo[1]
-      config       = local.triggers[combo[1]]
-    }
-  }
+
+# Resource for "plan" triggers (runs on PRs)
+resource "google_cloudbuild_trigger" "tf_plan" {
+  for_each = local.applications # Iterate over applications
 
   project         = var.project_id
-  name            = "${var.repository_name}-${replace(each.value.subfolder, "/", "-")}-${each.value.config.name_suffix}"
+  name            = "${var.repository_name}-${each.key}-${local.plan_config.name_suffix}"
   location        = var.region
   filename        = "cloudbuild.yaml"
   service_account = google_service_account.service_account["cloud-build-deploy"].id
 
-  # Repository event configuration for pull requests
-  dynamic "repository_event_config" {
-    for_each = each.value.config.event_type == "pull_request" ? [1] : []
-    content {
-      repository = google_cloudbuildv2_repository.github_repo.id
-      pull_request {
-        branch = each.value.config.branch_regex
-      }
+  # Watch all files in the application's paths (including nested files)
+  included_files = [for path in each.value.paths : "${path}/**"]
+
+  # Trigger on pull requests
+  repository_event_config {
+    repository = google_cloudbuildv2_repository.github_repo.id
+    pull_request {
+      branch = local.plan_config.branch_regex
     }
   }
 
-  # Repository event configuration for pushes
-  dynamic "repository_event_config" {
-    for_each = each.value.config.event_type == "push" ? [1] : []
-    content {
-      repository = google_cloudbuildv2_repository.github_repo.id
-      push {
-        branch = each.value.config.branch_regex
-      }
+  # Merge base substitutions with application-specific substitutions
+  substitutions = merge(
+    local.substitutions,
+    each.value.substitutions, # Application-specific substitutions
+    {
+      _APPLY_CHANGES = local.plan_config.apply_changes
+    }
+  )
+}
+
+# Resource for "apply" triggers (runs on pushes to main)
+resource "google_cloudbuild_trigger" "tf_apply" {
+  for_each = local.applications # Iterate over applications
+
+  project         = var.project_id
+  name            = "${var.repository_name}-${each.key}-${local.apply_config.name_suffix}"
+  location        = var.region
+  filename        = "cloudbuild.yaml"
+  service_account = google_service_account.service_account["cloud-build-deploy"].id
+
+  included_files = each.value.paths
+
+  # Trigger on pushes
+  repository_event_config {
+    repository = google_cloudbuildv2_repository.github_repo.id
+    push {
+      branch = local.apply_config.branch_regex
     }
   }
 
-  # Merge base substitutions with apply_changes and _SUBFOLDER
-  substitutions = merge(local.substitutions, {
-    _APPLY_CHANGES = each.value.config.apply_changes
-    _SUBFOLDER     = each.value.subfolder
-  })
-
-  depends_on = [
-    google_service_account.service_account["cloud-build-deploy"],
-    google_cloudbuildv2_repository.github_repo,
-  ]
+  # Merge base substitutions with application-specific substitutions
+  substitutions = merge(
+    local.substitutions,
+    each.value.substitutions, # Application-specific substitutions
+    {
+      _APPLY_CHANGES = local.apply_config.apply_changes
+    }
+  )
 }
