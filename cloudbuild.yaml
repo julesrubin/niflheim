@@ -8,13 +8,42 @@ steps:
     - |
       echo "***********************"
       echo "Project ID        : $_PROJECT_ID"
+      echo "Region            : $_REGION"
       echo "Branch            : $_BRANCH_NAME"
       echo "Dry Run           : ${_APPLY_CHANGES}"
       echo "Subfolder         : ${_SUBFOLDER}"
+      echo "Docker Folders    : ${_DOCKER_FOLDERS}"
+      echo "Artifact Registry : ${_ARTIFACT_REGISTRY}"
+      echo "Context           : ${_CONTEXT}"
       echo "***********************"
       chmod +x ./scripts/init.sh
       ./scripts/init.sh ${_PROJECT_ID} ${_SUBFOLDER}
 # [END project-init]
+
+# [START docker-build-push]
+- id: 'Docker Build and Push'
+  name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'sh'
+  args:
+    - '-c'
+    - |
+      if [ "${_DOCKER_FOLDERS}" != "" ]; then
+        echo "Building and pushing Docker images..."
+        # Loop through the comma-separated list of folders
+        for folder in $(echo ${_DOCKER_FOLDERS} | tr "," "\n"); do
+          if [ -d "$folder" ]; then
+            echo "Building Docker image for $folder..."
+            cd $folder
+            docker build -t $_REGION-docker.pkg.dev/$_PROJECT_ID/$_ARTIFACT_REGISTRY/$folder .
+            docker push $_REGION-docker.pkg.dev/$_PROJECT_ID/$_ARTIFACT_REGISTRY/$folder
+          else
+            echo "Folder $folder does not exist or does not contain Dockerfile"
+          fi
+        done
+      else
+        echo "Skipping Docker build and push (No Docker folders specified)"
+      fi
+# [END docker-build-push]
 
 # [START tf-init]
 - id: 'Terraform Init'
