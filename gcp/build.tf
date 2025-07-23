@@ -102,7 +102,8 @@ resource "google_cloudbuild_trigger" "tf_apply" {
 
   repository_event_config {
     repository = google_cloudbuildv2_repository.github_repo.id
-    pull_request {
+
+    push {
       branch = "^main"
     }
   }
