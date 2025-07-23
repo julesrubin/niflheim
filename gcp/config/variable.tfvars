@@ -1,7 +1,0 @@
-project_id          = "sandbox-jrubin"
-project_number      = "855346587718"
-region              = "europe-west1"
-repository_name     = "niflheim"
-context             = "root"
-owner               = "julesrubin"
-github_token_secret = "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"
