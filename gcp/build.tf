@@ -15,23 +15,23 @@ locals {
         _DOCKER_FOLDERS = ""
       }
     },
-    portfolio = {
-      included_files = ["gcp/portfolio/**", "frontend/portfolio/**"]
-      ignored_files  = []
-      substitutions = {
-        _SUBFOLDER         = "gcp/portfolio"
-        _DOCKER_FOLDERS    = "frontend/portfolio"
-        _ARTIFACT_REGISTRY = "sandbox-jrubin-gcr-niflheim-portfolio"
-      }
-    },
-    apis = {
-      included_files = ["gcp/apis/**"]
-      ignored_files  = []
-      substitutions = {
-        _SUBFOLDER      = "gcp/apis"
-        _DOCKER_FOLDERS = ""
-      }
-    }
+    # portfolio = {
+    #   included_files = ["gcp/portfolio/**", "frontend/portfolio/**"]
+    #   ignored_files  = []
+    #   substitutions = {
+    #     _SUBFOLDER         = "gcp/portfolio"
+    #     _DOCKER_FOLDERS    = "frontend/portfolio"
+    #     _ARTIFACT_REGISTRY = "sandbox-jrubin-gcr-niflheim-portfolio"
+    #   }
+    # },
+    # apis = {
+    #   included_files = ["gcp/apis/**"]
+    #   ignored_files  = []
+    #   substitutions = {
+    #     _SUBFOLDER      = "gcp/apis"
+    #     _DOCKER_FOLDERS = ""
+    #   }
+    # }
   }
 
   # Define a map for plan trigger configurations
