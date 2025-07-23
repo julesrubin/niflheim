@@ -11,8 +11,9 @@ locals {
       included_files = ["gcp/**"]
       ignored_files  = ["gcp/apis/**", "gcp/portfolio/**"]
       substitutions = {
-        _SUBFOLDER      = "gcp"
-        _DOCKER_FOLDERS = ""
+        _SUBFOLDER         = "gcp"
+        _DOCKER_FOLDERS    = ""
+        _ARTIFACT_REGISTRY = google_artifact_registry_repository.cloud_run_images.name
       }
     },
     # portfolio = {
