@@ -38,7 +38,6 @@ locals {
       role        = "roles/resourcemanager.projectIamAdmin"
       description = "Grant Cloud Build SA Project IAM Admin role (to manage project-level IAM policies)"
     }
-
   }
 }
 
