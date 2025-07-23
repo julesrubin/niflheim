@@ -1,0 +1,23 @@
+{
+    http_port {$PORT}
+}
+
+# All requests will come to our proxy's default URL, so we don't need a domain name here.
+:{$PORT} {
+    # Redirect the home page to /hello
+    redir / /hello 301
+
+    # Route requests for /hello to the "hello" service
+    route /hello* {
+        reverse_proxy {$HELLO_SERVICE_URL} {
+            header_up Host {http.reverse_proxy.upstream.hostport}
+        }
+    }
+
+    # Route requests for /hello-2 to the "hello-2" service
+    route /hello-2* {
+        reverse_proxy {$HELLO_2_SERVICE_URL} {
+            header_up Host {http.reverse_proxy.upstream.hostport}
+        }
+    }
+}
