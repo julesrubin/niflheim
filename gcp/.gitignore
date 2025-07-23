@@ -36,3 +36,9 @@ override.tf.json
 .terraformrc
 terraform.rc
 .terraform.lock.hcl
+
+# Ignore Terraform plan files
+*.tfplan
+
+# Ignore secret files
+secret.tfvars

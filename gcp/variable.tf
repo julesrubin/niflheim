@@ -27,8 +27,3 @@ variable "owner" {
   description = "The repository owner"
   type        = string
 }
-
-variable "github_token_secret" {
-  description = "The secret ID for the GitHub token"
-  type        = string
-}
