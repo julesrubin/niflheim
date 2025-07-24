@@ -1,7 +1,9 @@
 locals {
   substitutions = {
-    _PROJECT_ID = var.project_id
-    _REGION     = var.region
+    _PROJECT_ID        = var.project_id
+    _REGION            = var.region
+    _ARTIFACT_REGISTRY = google_artifact_registry_repository.cloud_run_images.name
+
   }
 }
 
@@ -11,20 +13,18 @@ locals {
       included_files = ["gcp/**"]
       ignored_files  = ["gcp/apis/**", "gcp/portfolio/**"]
       substitutions = {
-        _SUBFOLDER         = "gcp"
-        _DOCKER_FOLDERS    = ""
-        _ARTIFACT_REGISTRY = google_artifact_registry_repository.cloud_run_images.name
+        _SUBFOLDER      = "gcp"
+        _DOCKER_FOLDERS = ""
       }
     },
-    # portfolio = {
-    #   included_files = ["gcp/portfolio/**", "frontend/portfolio/**"]
-    #   ignored_files  = []
-    #   substitutions = {
-    #     _SUBFOLDER         = "gcp/portfolio"
-    #     _DOCKER_FOLDERS    = "frontend/portfolio"
-    #     _ARTIFACT_REGISTRY = "sandbox-jrubin-gcr-niflheim-portfolio"
-    #   }
-    # },
+    portfolio = {
+      included_files = ["gcp/portfolio/**", "frontend/portfolio/**"]
+      ignored_files  = []
+      substitutions = {
+        _SUBFOLDER      = "gcp/portfolio"
+        _DOCKER_FOLDERS = "frontend/portfolio"
+      }
+    },
     # apis = {
     #   included_files = ["gcp/apis/**"]
     #   ignored_files  = []
