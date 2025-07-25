@@ -1,6 +1,7 @@
 import AboutMeBio from '../components/about/AboutMeBio';
 // import AboutMeTab from '../components/about/AboutMeTab';
 import { AboutMeProvider } from '../context/AboutMeContext';
+import Certifications from '../components/shared/Certifications';
 
 import { motion } from 'framer-motion';
 
@@ -14,6 +15,7 @@ const About = () => {
 				className="container mx-auto"
 			>
 				<AboutMeBio />
+				<Certifications />
 			</motion.div>
 			{/* <motion.div
 				initial={{ opacity: 0 }}

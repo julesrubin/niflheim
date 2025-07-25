@@ -4,7 +4,7 @@ import ProjectSingle from './ProjectSingle';
 import { ProjectsContext } from '../../context/ProjectsContext';
 import ProjectsFilter from './ProjectsFilter';
 
-const ProjectsGrid = () => {
+const ProjectsGrid = ({ limit }) => {
 	const {
 		projects,
 		searchProject,
@@ -14,6 +14,8 @@ const ProjectsGrid = () => {
 		setSelectProject,
 		selectProjectsByCategory,
 	} = useContext(ProjectsContext);
+
+	const projectsToDisplay = limit ? projects.slice(0, limit) : projects;
 
 	return (
 		<section className="py-5 sm:py-10 mt-5 sm:mt-10">
@@ -112,7 +114,7 @@ const ProjectsGrid = () => {
 								projectKey={project.projectKey}
 							/>
 					  ))
-					: projects.map((project) => (
+					: projectsToDisplay.map((project) => (
 							<ProjectSingle
 								title={project.title}
 								category={project.category}

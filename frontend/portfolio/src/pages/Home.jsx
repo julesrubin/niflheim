@@ -3,6 +3,7 @@ import AppBanner from '../components/shared/AppBanner';
 import ProjectsGrid from '../components/projects/ProjectsGrid';
 import { ProjectsProvider } from '../context/ProjectsContext';
 import Button from '../components/reusable/Button';
+import Certifications from '../components/shared/Certifications';
 
 const Home = () => {
 	return (
@@ -10,7 +11,7 @@ const Home = () => {
 			<AppBanner></AppBanner>
 
 			<ProjectsProvider>
-				<ProjectsGrid></ProjectsGrid>
+				<ProjectsGrid limit={3}></ProjectsGrid>
 			</ProjectsProvider>
 
 			<div className="mt-8 sm:mt-10 flex justify-center">
@@ -22,6 +23,7 @@ const Home = () => {
 					<Button title="More Projects" />
 				</Link>
 			</div>
+			<Certifications />
 		</div>
 	);
 };
