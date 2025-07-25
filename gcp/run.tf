@@ -1,13 +1,7 @@
 locals {
   cloud_run_services = {
-    "hello_service" = {
-      name      = "hello"
-      image_url = "us-docker.pkg.dev/cloudrun/container/hello"
-      is_public = true
-    }
     "portfolio_service" = {
       name      = "portfolio"
-      image_url = "europe-west1-docker.pkg.dev/sandbox-jrubin/sandbox-jrubin-gcr-niflheim/portfolio"
       is_public = true
     }
   }
@@ -18,7 +12,7 @@ module "cloud_run_services" {
   for_each  = local.cloud_run_services
   name      = each.value.name
   location  = var.region
-  image_url = each.value.image_url
+  image_url = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.cloud_run_images.name}/${each.value.name}:latest"
   is_public = each.value.is_public
 }
 
