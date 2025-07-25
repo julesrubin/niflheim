@@ -32,6 +32,14 @@ locals {
         _SUBFOLDER      = "gcp/services/portfolio"
         _DOCKER_FOLDERS = "frontend/portfolio"
       }
+    },
+    api = {
+      included_files = ["gcp/services/api/**", "backend/api/**"]
+      ignored_files  = []
+      substitutions = {
+        _SUBFOLDER      = "gcp/services/api"
+        _DOCKER_FOLDERS = "backend/api"
+      }
     }
   }
 
