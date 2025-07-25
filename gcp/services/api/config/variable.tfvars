@@ -1,0 +1,5 @@
+project_id = "sandbox-jrubin"
+project_number = "855346587718"
+region = "europe-west1"
+repository_name = "niflheim"
+context = "api"
