@@ -11,14 +11,14 @@ locals {
   applications = {
     root = {
       included_files = ["gcp/**"]
-      ignored_files  = ["gcp/apis/**", "gcp/portfolio/**"]
+      ignored_files  = ["gcp/apis/**", "frontend/portfolio/**"]
       substitutions = {
         _SUBFOLDER      = "gcp"
         _DOCKER_FOLDERS = ""
       }
     },
     portfolio = {
-      included_files = ["gcp/portfolio/**", "frontend/portfolio/**"]
+      included_files = ["gcp/portfolio/**", "gcp/portfolio/**"]
       ignored_files  = []
       substitutions = {
         _SUBFOLDER      = "gcp/portfolio"
