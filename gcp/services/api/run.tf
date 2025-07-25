@@ -12,7 +12,7 @@ module "cloud_run_services" {
   for_each  = local.cloud_run_services
   name      = each.value.name
   location  = var.region
-  image_url = "${var.region}-docker.pkg.dev/${var.project_id}/${var.repository_name}/${each.value.name}:${var.image_tag_suffix}"
+  image_url = "${var.region}-docker.pkg.dev/${var.project_id}/${var.project_id}-gcr-${var.repository_name}/${each.value.name}:${var.image_tag_suffix}"
   is_public = each.value.is_public
 }
 
