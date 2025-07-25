@@ -27,3 +27,9 @@ variable "owner" {
   description = "The repository owner"
   type        = string
 }
+
+variable "image_tag_suffix" {
+  description = "Suffix for the Docker image tag (e.g., commit SHA)"
+  type        = string
+  default     = "latest"
+}

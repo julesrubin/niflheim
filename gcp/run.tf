@@ -12,7 +12,7 @@ module "cloud_run_services" {
   for_each  = local.cloud_run_services
   name      = each.value.name
   location  = var.region
-  image_url = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.cloud_run_images.name}/${each.value.name}:latest"
+  image_url = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.cloud_run_images.name}/${each.value.name}:${var.image_tag_suffix}"
   is_public = each.value.is_public
 }
 
@@ -34,7 +34,7 @@ module "proxy_service" {
   source    = "./modules/cloud_run"
   name      = "proxy-service"
   location  = var.region
-  image_url = "europe-west1-docker.pkg.dev/sandbox-jrubin/sandbox-jrubin-gcr-niflheim/proxy"
+  image_url = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.cloud_run_images.name}/proxy:${var.image_tag_suffix}"
   is_public = true
   env_vars = {
     for k, v in local.cloud_run_services :

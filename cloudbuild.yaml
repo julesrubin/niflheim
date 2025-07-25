@@ -34,8 +34,8 @@ steps:
           if [ -d "$folder" ]; then
             echo "Building Docker image for $folder..."
             cd $folder
-            docker build -t $_REGION-docker.pkg.dev/$_PROJECT_ID/$_ARTIFACT_REGISTRY/$_CONTEXT .
-            docker push $_REGION-docker.pkg.dev/$_PROJECT_ID/$_ARTIFACT_REGISTRY/$_CONTEXT
+            docker build -t $_REGION-docker.pkg.dev/$_PROJECT_ID/$_ARTIFACT_REGISTRY/$_CONTEXT:$_COMMIT_SHA .
+            docker push $_REGION-docker.pkg.dev/$_PROJECT_ID/$_ARTIFACT_REGISTRY/$_CONTEXT:$_COMMIT_SHA
           else
             echo "Folder $folder does not exist or does not contain Dockerfile"
           fi
@@ -64,7 +64,7 @@ steps:
     - '-c'
     - |
       cd $_SUBFOLDER
-      terraform plan -out changes.tfplan -var-file=config/variable.tfvars
+      terraform plan -out changes.tfplan -var-file=config/variable.tfvars -var="image_tag_suffix=${_COMMIT_SHA}"
 # [END tf-plan]
 
 # [START tf-apply]
