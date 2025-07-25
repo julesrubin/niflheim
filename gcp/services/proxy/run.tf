@@ -13,7 +13,7 @@ module "proxy_service" {
   is_public = true
   env_vars = {
     for v in local.proxied_cloud_run_services :
-    "${upper(v)}_URL" => "https://${v}-${var.project_number}-${var.region}.run.app"
+    "${upper(v)}_URL" => "https://${v}-${var.project_number}.${var.region}.run.app"
   }
 }
 
