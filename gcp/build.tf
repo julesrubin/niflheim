@@ -9,7 +9,7 @@ locals {
 
 locals {
   applications = {
-    core_gcp = {
+    core-gcp = {
       included_files = ["gcp/**"]
       ignored_files  = ["gcp/portfolio/**", "gcp/proxy/**", "frontend/portfolio/**", "backend/proxy/**"]
       substitutions = {
@@ -33,7 +33,7 @@ locals {
         _DOCKER_FOLDERS = "backend/proxy"
       }
     },
-    services_portfolio = {
+    services-portfolio = {
       included_files = ["gcp/services/portfolio/**"]
       ignored_files  = []
       substitutions = {
