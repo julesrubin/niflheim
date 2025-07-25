@@ -15,7 +15,7 @@ const socialLinks = [
 	{
 		id: 2,
 		icon: <FiGithub />,
-		url: 'https://github.com/Pernam75',
+		url: 'https://github.com/julesrubin',
 	},
 	// {
 	// 	id: 3,

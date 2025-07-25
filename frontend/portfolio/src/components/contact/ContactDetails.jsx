@@ -3,21 +3,15 @@ import { FiPhone, FiMail } from 'react-icons/fi';
 const contacts = [
 	{
 		id: 2,
-		name: 'jules.rubin.jr@gmail.com',
+		name: 'jules.rubin.pro@gmail.com',
 		icon: <FiMail />,
-		link: 'mailto:jules.rubin.jr@gmail.com',
+		link: 'mailto:jules.rubin.pro@gmail.com',
 	},
 	{
 		id: 3,
 		name: 'jules.rubin@efrei.net',
 		icon: <FiMail />,
 		link: 'mailto:jules.rubin@efrei.net',
-	},
-	{
-		id: 4,
-		name: '07 69 82 83 71',
-		icon: <FiPhone />,
-		link: 'tel:+33769828371',
 	},
 ];
 

@@ -146,7 +146,7 @@ const projectDatas = {
 				id: 1,
 				name: 'Github',
 				icon: <FiGithub/>,
-				url: 'https://github.com/Pernam75/ProjetProgWeb',
+				url: 'https://github.com/julesrubin/ProjetProgWeb',
 			},
 			{
 				id: 2,
@@ -263,7 +263,7 @@ const projectDatas = {
 				id: 1,
 				name: 'Github',
 				icon: <FiGithub/>,
-				url: 'https://github.com/Pernam75/GuideMe',
+				url: 'https://github.com/julesrubin/GuideMe',
 			},
 			{
 				id: 2,
@@ -392,7 +392,7 @@ const projectDatas = {
 				id: 1,
 				name: 'Github',
 				icon: <FiGithub/>,
-				url: 'https://github.com/Pernam75/MealMate'
+				url: 'https://github.com/julesrubin/MealMate'
 			},
 			{
 				id: 2,
@@ -513,7 +513,7 @@ const projectDatas = {
 				id: 1,
 				name: 'Github',
 				icon: <FiGithub/>,
-				url: "https://github.com/Pernam75/traffic_congestion"
+				url: "https://github.com/julesrubin/traffic_congestion"
 			},
 			{
 				id: 2,
@@ -756,7 +756,7 @@ const projectDatas = {
 					id: 1,
 					name: 'Github',
 					icon: <FiGithub/>,
-					url: 'https://github.com/Pernam75/Microcontroleur-VHDL',
+					url: 'https://github.com/julesrubin/Microcontroleur-VHDL',
 				},
 			],
 		},
@@ -867,7 +867,7 @@ const projectDatas = {
 				id: 1,
 				name: 'Github',
 				icon: <FiGithub/>,
-				url: "https://github.com/Pernam75/finite-automatons",
+				url: "https://github.com/julesrubin/finite-automatons",
 			},
 		],
     },
@@ -978,7 +978,7 @@ const projectDatas = {
                     id: 1,
                     name: 'Github',
                     icon: <FiGithub/>,
-                    url: "https://github.com/Pernam75/floyd_warshall_implementation",
+                    url: "https://github.com/julesrubin/floyd_warshall_implementation",
                 },
                 {
                     id: 2,
@@ -1096,7 +1096,7 @@ const projectDatas = {
 					id: 1,
 					name: 'Github',
 					icon: <FiGithub/>,
-					url: "https://github.com/Pernam75/Machine-Learning-for-DDoS-attacks-detection",
+					url: "https://github.com/julesrubin/Machine-Learning-for-DDoS-attacks-detection",
 				},
 				{
 					id: 2,
@@ -1228,7 +1228,7 @@ const projectDatas = {
 					id: 1,
 					name: 'Github',
 					icon: <FiGithub/>,
-					url: "https://github.com/Pernam75/SVM-for-Heart-Failure-Detections",
+					url: "https://github.com/julesrubin/SVM-for-Heart-Failure-Detections",
 				},
 				{
 					id: 2,
@@ -1603,7 +1603,7 @@ const projectDatas = {
 					id: 1,
 					name: 'Github',
 					icon: <FiGithub/>,
-					url: "https://github.com/Pernam75/nlp-wikipedia-search-engine",
+					url: "https://github.com/julesrubin/nlp-wikipedia-search-engine",
 				},
 			],
 		},
