@@ -2,14 +2,13 @@
 :{$PORT} {
     # Redirect all requests to the root path to /portfolio
     redir / /portfolio 301
-    # Route requests for /hello to the "hello" service
-    handle_path /hello* {
-        reverse_proxy {$HELLO_SERVICE_URL} {
-            header_up Host {http.reverse_proxy.upstream.hostport}
-            header_up X-Forwarded-Proto https
+    # Handle health checks
+    handle /health {
+        # Respond with a 200 OK status for health checks.
+        respond "OK" 200 {
+            close
         }
     }
-
     # Route requests for /portfolio to the "portfolio" service
     handle_path /portfolio* {
         # Proxy the request to the portfolio service.
