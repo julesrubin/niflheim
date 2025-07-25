@@ -9,36 +9,28 @@ locals {
 
 locals {
   applications = {
-    core-gcp = {
+    core = {
       included_files = ["gcp/**"]
-      ignored_files  = ["gcp/portfolio/**", "gcp/proxy/**", "frontend/portfolio/**", "backend/proxy/**"]
+      ignored_files  = ["gcp/services/**"]
       substitutions = {
         _SUBFOLDER      = "gcp"
         _DOCKER_FOLDERS = ""
-      }
-    },
-    portfolio = {
-      included_files = ["frontend/portfolio/**"]
-      ignored_files  = []
-      substitutions = {
-        _SUBFOLDER      = "gcp"
-        _DOCKER_FOLDERS = "frontend/portfolio"
       }
     },
     proxy = {
-      included_files = ["backend/proxy/**"]
+      included_files = ["gcp/services/proxy/**", "backend/proxy/**"]
       ignored_files  = []
       substitutions = {
-        _SUBFOLDER      = "gcp"
+        _SUBFOLDER      = "gcp/services/proxy"
         _DOCKER_FOLDERS = "backend/proxy"
       }
     },
-    services-portfolio = {
-      included_files = ["gcp/services/portfolio/**"]
+    portfolio = {
+      included_files = ["gcp/services/portfolio/**", "frontend/portfolio/**"]
       ignored_files  = []
       substitutions = {
         _SUBFOLDER      = "gcp/services/portfolio"
-        _DOCKER_FOLDERS = ""
+        _DOCKER_FOLDERS = "frontend/portfolio"
       }
     }
   }
