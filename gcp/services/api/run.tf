@@ -23,7 +23,7 @@ resource "google_cloud_run_v2_service_iam_member" "cloud_run_services_invoker" {
   location = var.region
   name     = each.value.name
   role     = "roles/run.invoker"
-  member   = "allUsers"
+  member   = "allUsers" # TODO : should be change in the future to use Google Identity ?
 
   depends_on = [
     module.cloud_run_services
