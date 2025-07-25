@@ -1,17 +1,39 @@
-module "hello_service" {
-  source    = "./modules/cloud_run"
-  name      = "hello"
-  location  = var.region
-  image_url = "us-docker.pkg.dev/cloudrun/container/hello"
-  is_public = true
+locals {
+  cloud_run_services = {
+    "hello_service" = {
+      name      = "hello"
+      image_url = "us-docker.pkg.dev/cloudrun/container/hello"
+      is_public = true
+    }
+    "portfolio_service" = {
+      name      = "portfolio"
+      image_url = "europe-west1-docker.pkg.dev/sandbox-jrubin/sandbox-jrubin-gcr-niflheim/portfolio"
+      is_public = true
+    }
+  }
 }
 
-module "hello_2_service" {
+module "cloud_run_services" {
   source    = "./modules/cloud_run"
-  name      = "hello-2"
+  for_each  = local.cloud_run_services
+  name      = each.value.name
   location  = var.region
-  image_url = "us-docker.pkg.dev/cloudrun/container/hello"
-  is_public = true
+  image_url = each.value.image_url
+  is_public = each.value.is_public
+}
+
+resource "google_cloud_run_v2_service_iam_member" "cloud_run_services_invoker" {
+  for_each = local.cloud_run_services
+
+  project  = var.project_id
+  location = var.region
+  name     = each.value.name
+  role     = "roles/run.invoker"
+  member   = "allUsers" # TODO : find a way to use the service account here
+
+  depends_on = [
+    module.cloud_run_services
+  ]
 }
 
 module "proxy_service" {
@@ -21,25 +43,11 @@ module "proxy_service" {
   image_url = "europe-west1-docker.pkg.dev/sandbox-jrubin/sandbox-jrubin-gcr-niflheim/proxy"
   is_public = true
   env_vars = {
-    HELLO_SERVICE_URL   = "${module.hello_service.url}"
-    HELLO_2_SERVICE_URL = "${module.hello_2_service.url}"
+    for k, v in local.cloud_run_services :
+    "${upper(k)}_URL" => module.cloud_run_services[k].url
   }
-}
 
-resource "google_cloud_run_v2_service_iam_member" "allow_proxy_to_hello" {
-  project  = module.hello_service.project
-  location = module.hello_service.location
-  name     = module.hello_service.name
-  role     = "roles/run.invoker"
-  member   = "allUsers" # TODO : find a way to use the proxy service account here
-}
-
-resource "google_cloud_run_v2_service_iam_member" "allow_proxy_to_hello_2" {
-  project  = module.hello_2_service.project
-  location = module.hello_2_service.location
-  name     = module.hello_2_service.name
-  role     = "roles/run.invoker"
-  member   = "allUsers" # TODO : find a way to use the proxy service account here
+  depends_on = [module.cloud_run_services]
 }
 
 resource "google_cloud_run_v2_service_iam_member" "allow_all_users_to_invoke_proxy" {
@@ -48,4 +56,8 @@ resource "google_cloud_run_v2_service_iam_member" "allow_all_users_to_invoke_pro
   name     = module.proxy_service.name
   role     = "roles/run.invoker"
   member   = "allUsers"
+
+  depends_on = [
+    module.proxy_service
+  ]
 }
