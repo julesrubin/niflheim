@@ -57,12 +57,12 @@ endif
 
 all-portfolio:
 	docker build --platform linux/amd64 -t europe-west1-docker.pkg.dev/sandbox-jrubin/sandbox-jrubin-gcr-niflheim/portfolio:latest frontend/portfolio
-	docker push europe-west1-docker.pkg.dev/sandbox-jrubin/sandbox-jrubin-gcr-niflheim/portfolio:latest
+	docker push europe-west1-docker.pkg.dev/sandbox-jrubin/sandbox-jrubin-gcr-niflheim/portfolio
 	gcloud run deploy portfolio --image europe-west1-docker.pkg.dev/sandbox-jrubin/sandbox-jrubin-gcr-niflheim/portfolio:latest --region europe-west1 --platform managed --allow-unauthenticated --port 8080
 
 all-proxy:
 	docker build --platform linux/amd64 -t europe-west1-docker.pkg.dev/sandbox-jrubin/sandbox-jrubin-gcr-niflheim/proxy:latest backend/proxy
-	docker push europe-west1-docker.pkg.dev/sandbox-jrubin/sandbox-jrubin-gcr-niflheim/proxy:latest
+	docker push europe-west1-docker.pkg.dev/sandbox-jrubin/sandbox-jrubin-gcr-niflheim/proxy
 	gcloud run deploy proxy-service --image europe-west1-docker.pkg.dev/sandbox-jrubin/sandbox-jrubin-gcr-niflheim/proxy:latest --region europe-west1 --platform managed --allow-unauthenticated --port 8080
 
 # Dummy rule to prevent errors from additional arguments
