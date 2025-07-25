@@ -2,6 +2,7 @@
 locals {
   proxied_cloud_run_services = [
     "portfolio",
+    "api",
   ]
 }
 
