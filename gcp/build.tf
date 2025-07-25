@@ -9,30 +9,38 @@ locals {
 
 locals {
   applications = {
-    root = {
+    core_gcp = {
       included_files = ["gcp/**"]
-      ignored_files  = ["gcp/apis/**", "frontend/portfolio/**"]
+      ignored_files  = ["gcp/portfolio/**", "gcp/proxy/**", "frontend/portfolio/**", "backend/proxy/**"]
       substitutions = {
         _SUBFOLDER      = "gcp"
         _DOCKER_FOLDERS = ""
       }
     },
     portfolio = {
-      included_files = ["gcp/portfolio/**", "gcp/portfolio/**"]
+      included_files = ["frontend/portfolio/**"]
       ignored_files  = []
       substitutions = {
-        _SUBFOLDER      = "gcp/portfolio"
+        _SUBFOLDER      = "gcp"
         _DOCKER_FOLDERS = "frontend/portfolio"
       }
     },
-    # apis = {
-    #   included_files = ["gcp/apis/**"]
-    #   ignored_files  = []
-    #   substitutions = {
-    #     _SUBFOLDER      = "gcp/apis"
-    #     _DOCKER_FOLDERS = ""
-    #   }
-    # }
+    proxy = {
+      included_files = ["backend/proxy/**"]
+      ignored_files  = []
+      substitutions = {
+        _SUBFOLDER      = "gcp"
+        _DOCKER_FOLDERS = "backend/proxy"
+      }
+    },
+    services_portfolio = {
+      included_files = ["gcp/services/portfolio/**"]
+      ignored_files  = []
+      substitutions = {
+        _SUBFOLDER      = "gcp/services/portfolio"
+        _DOCKER_FOLDERS = ""
+      }
+    }
   }
 
   # Define a map for plan trigger configurations
