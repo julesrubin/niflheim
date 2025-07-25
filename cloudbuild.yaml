@@ -15,6 +15,7 @@ steps:
       echo "Docker Folders    : ${_DOCKER_FOLDERS}"
       echo "Artifact Registry : ${_ARTIFACT_REGISTRY}"
       echo "Context           : ${_CONTEXT}"
+      echo "Short SHA         : ${SHORT_SHA}"
       echo "***********************"
       chmod +x ./scripts/init.sh
       ./scripts/init.sh ${_PROJECT_ID} ${_SUBFOLDER}
@@ -34,8 +35,8 @@ steps:
           if [ -d "$folder" ]; then
             echo "Building Docker image for $folder..."
             cd $folder
-            docker build -t $_REGION-docker.pkg.dev/$_PROJECT_ID/$_ARTIFACT_REGISTRY/$_CONTEXT:$_COMMIT_SHA .
-            docker push $_REGION-docker.pkg.dev/$_PROJECT_ID/$_ARTIFACT_REGISTRY/$_CONTEXT:$_COMMIT_SHA
+            docker build -t $_REGION-docker.pkg.dev/$_PROJECT_ID/$_ARTIFACT_REGISTRY/$_CONTEXT:$SHORT_SHA .
+            docker push $_REGION-docker.pkg.dev/$_PROJECT_ID/$_ARTIFACT_REGISTRY/$_CONTEXT:$SHORT_SHA
           else
             echo "Folder $folder does not exist or does not contain Dockerfile"
           fi
@@ -64,7 +65,7 @@ steps:
     - '-c'
     - |
       cd $_SUBFOLDER
-      terraform plan -out changes.tfplan -var-file=config/variable.tfvars -var="image_tag_suffix=${_COMMIT_SHA}"
+      terraform plan -out changes.tfplan -var-file=config/variable.tfvars -var="image_tag_suffix=${SHORT_SHA}"
 # [END tf-plan]
 
 # [START tf-apply]
