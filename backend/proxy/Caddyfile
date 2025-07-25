@@ -1,4 +1,3 @@
-# All requests will come to our proxy's default URL, so we don't need a domain name here.
 :{$PORT} {
     # Redirect all requests to the root path to /portfolio
     redir / /portfolio 301
