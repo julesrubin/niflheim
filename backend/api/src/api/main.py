@@ -1,7 +1,10 @@
 from fastapi import FastAPI
 from .routers import items  # Use a relative import to include the router
 
-app = FastAPI()
+app = FastAPI(
+    root_path="/api",  # Set the root path for the API
+    root_path_in_servers=False
+)
 
 # Include the router, all routes from `items.py` will be added
 app.include_router(items.router)
