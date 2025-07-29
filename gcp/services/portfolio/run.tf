@@ -1,8 +1,9 @@
 locals {
   cloud_run_services = {
     "portfolio_service" = {
-      name      = "portfolio"
-      is_public = true
+      name           = "portfolio"
+      is_public      = false
+      container_port = 8080
     }
   }
 }
@@ -16,6 +17,10 @@ module "cloud_run_services" {
   is_public = each.value.is_public
 }
 
+data "google_service_account" "proxy_invoker" {
+  account_id = "proxy-invoker-${var.repository_name}"
+}
+
 resource "google_cloud_run_v2_service_iam_member" "cloud_run_services_invoker" {
   for_each = local.cloud_run_services
 
@@ -23,7 +28,7 @@ resource "google_cloud_run_v2_service_iam_member" "cloud_run_services_invoker" {
   location = var.region
   name     = each.value.name
   role     = "roles/run.invoker"
-  member   = "allUsers"
+  member   = "serviceAccount:${data.google_service_account.proxy_invoker.email}"
 
   depends_on = [
     module.cloud_run_services
