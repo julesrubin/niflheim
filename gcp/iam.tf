@@ -38,6 +38,10 @@ locals {
       role        = "roles/resourcemanager.projectIamAdmin"
       description = "Grant Cloud Build SA Project IAM Admin role (to manage project-level IAM policies)"
     }
+    "service-account-admin-access" = {
+      role        = "roles/iam.serviceAccountAdmin"
+      description = "Grant Cloud Build SA Service Account Admin role (to manage service accounts)"
+    }
   }
 }
 
