@@ -1,6 +1,7 @@
 locals {
   service_account = {
     "cloud-build-deploy" = "Cloud Build Deploy Service Account for ${var.repository_name}"
+    "proxy-invoker"      = "Service Account for the proxy to invoke other services in the project ${var.repository_name}"
   }
 }
 
