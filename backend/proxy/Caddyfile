@@ -1,32 +1,29 @@
 :{$PORT} {
     log
 
+    # Redirection de la racine vers /portfolio/
     redir / /portfolio/ 301
 
     handle /health {
         respond "OK" 200
     }
 
+    # Route pour l'API avec authentification de service
     handle_path /api/* {
-        # This will now be recognized
-        reverse_proxy {$API_SERVICE_URL} {
-            google_id_token {
-                aud {$API_SERVICE_URL}
-            }
-            header_up Host {http.reverse_proxy.upstream.hostport}
+        authp {
+            gcp
+            set audience {$API_SERVICE_URL}
         }
+        reverse_proxy {$API_SERVICE_URL}
     }
 
+    # Route pour le portfolio avec authentification de service et gestion du SPA
     handle_path /portfolio/* {
-        # Handles SPA routing correctly
         try_files {path} /index.html
-
-        # This will now be recognized
-        reverse_proxy {$PORTFOLIO_SERVICE_URL} {
-            google_id_token {
-                aud {$PORTFOLIO_SERVICE_URL}
-            }
-            header_up Host {http.reverse_proxy.upstream.hostport}
+        authp {
+            gcp
+            set audience {$PORTFOLIO_SERVICE_URL}
         }
+        reverse_proxy {$PORTFOLIO_SERVICE_URL}
     }
 }
