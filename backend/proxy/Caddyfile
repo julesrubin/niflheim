@@ -1,36 +1,32 @@
 :{$PORT} {
     log
 
-    # No change here
     redir / /portfolio/ 301
 
-    # No change here
     handle /health {
         respond "OK" 200
     }
 
-    # No change here
     handle_path /api/* {
+        # This will now be recognized
         reverse_proxy {$API_SERVICE_URL} {
             google_id_token {
                 aud {$API_SERVICE_URL}
             }
             header_up Host {http.reverse_proxy.upstream.hostport}
-            header_up X-Forwarded-Proto https
         }
     }
 
     handle_path /portfolio/* {
-        # 🔽 *** THIS IS THE CORRECTED LOGIC FOR AN SPA *** 🔽
-        # Tries to find the file at the given path. If not found, it falls back to index.html.
+        # Handles SPA routing correctly
         try_files {path} /index.html
 
+        # This will now be recognized
         reverse_proxy {$PORTFOLIO_SERVICE_URL} {
             google_id_token {
                 aud {$PORTFOLIO_SERVICE_URL}
             }
             header_up Host {http.reverse_proxy.upstream.hostport}
-            header_up X-Forwarded-Proto https
         }
     }
 }
