@@ -1,28 +1,29 @@
 :{$PORT} {
-    # Redirect all requests to the root path to /portfolio
-    redir / /portfolio 301
-    # Handle health checks
+    log
+
+    redir / /portfolio/ 301
+
     handle /health {
-        # Respond with a 200 OK status for health checks.
-        respond "OK" 200 {
-            close
-        }
+        respond "OK" 200
     }
-    # Route requests for /api to the "api" service
-    handle_path /api* {
-        # Proxy the request to the api service.
+
+    # Pas de changement ici
+    handle_path /api/* {
         reverse_proxy {$API_SERVICE_URL} {
+            # L'authentification sera nécessaire ici plus tard
             header_up Host {http.reverse_proxy.upstream.hostport}
-            header_up X-Forwarded-Proto https
         }
     }
 
-    # Route requests for /portfolio to the "portfolio" service
-    handle_path /portfolio* {
-        # Proxy the request to the portfolio service.
+    # La solution est ici
+    handle_path /portfolio/* {
+        # Pour toute requête qui ne ressemble PAS à un fichier (ex: .css, .js)
+        # on la réécrit pour qu'elle pointe vers la page d'accueil.
+        rewrite not path_regexp \.\w+$ /index.html
+
         reverse_proxy {$PORTFOLIO_SERVICE_URL} {
+            # L'authentification sera nécessaire ici plus tard
             header_up Host {http.reverse_proxy.upstream.hostport}
-            header_up X-Forwarded-Proto https
         }
     }
 }
