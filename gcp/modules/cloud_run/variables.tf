@@ -30,3 +30,9 @@ variable "container_port" {
   description = "The port the container listens on."
   default     = 8080
 }
+
+variable "service_account" {
+  type        = string
+  description = "The email of the service account to use for the service."
+  default     = null # Default to null (uses the default Compute Engine SA)
+}
