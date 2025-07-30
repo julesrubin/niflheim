@@ -2,13 +2,15 @@ locals {
   secrets = {
     "default-client-credentials" = {
       labels = {
-        service = "${var.repository_name}-${var.context}"
+        service = var.repository_name
+        context = var.context
         type    = "client-credentials"
       }
     }
     "${var.repository_name}-${var.context}-jwt-signing-key" = {
       labels = {
-        service = "${var.repository_name}-${var.context}"
+        service = var.repository_name
+        context = var.context
         type    = "jwt-signing-key"
       }
     }
