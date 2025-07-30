@@ -1,5 +1,5 @@
 resource "google_secret_manager_secret_iam_member" "api_service_access" {
-  for_each  = local.secrets
+  for_each  = google_secret_manager_secret.api_secrets
   project   = var.project_id
   secret_id = each.key
   role      = "roles/secretmanager.secretAccessor"

@@ -7,7 +7,7 @@ locals {
         type    = "client-credentials"
       }
     }
-    "${var.repository_name}-${var.context}-jwt-signing-key" = {
+    "jwt-signing-key" = {
       labels = {
         service = var.repository_name
         context = var.context
