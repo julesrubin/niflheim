@@ -3,7 +3,7 @@
  <img width=200px height=200px src="https://i.imgur.com/6wj0hh6.jpg" alt="Niflheim - Home of Mist"></a>
 </p>
 
-<h3 align="center">Niflheim - "Home of Mist"</h3>
+<h3 align="center">Niflheim</h3>
 
 <div align="center">
 
