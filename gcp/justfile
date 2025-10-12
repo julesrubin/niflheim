@@ -1,0 +1,178 @@
+#!/usr/bin/env -S just --justfile
+# GCP Infrastructure (Terraform)
+
+# GCP Configuration
+GCP_PROJECT := "sandbox-jrubin"
+GCP_REGION := "europe-west1"
+
+# Internal helper to check Terraform is available
+_check-terraform:
+    #!/usr/bin/env bash
+    if ! command -v terraform &> /dev/null; then
+        echo "ERROR: Terraform is required but not installed."
+        echo "Please install Terraform from: https://www.terraform.io/downloads"
+        exit 1
+    fi
+
+# Initialize Terraform for root infrastructure or specific service
+[group('infra')]
+init service="":
+    #!/usr/bin/env bash
+    cd {{ source_directory() }}
+    if [ -z "{{ service }}" ]; then
+        TARGET_DIR="."
+        echo "Initializing root GCP infrastructure..."
+    else
+        TARGET_DIR="services/{{ service }}"
+        echo "Initializing Terraform for {{ service }} service..."
+    fi
+
+    if [ ! -d "$TARGET_DIR" ]; then
+        echo "ERROR: Directory $TARGET_DIR does not exist"
+        exit 1
+    fi
+
+    terraform -chdir="$TARGET_DIR" init \
+        -input=false \
+        -no-color \
+        -upgrade \
+        -backend-config=init/backend.tfvars \
+        -reconfigure
+
+    echo "✓ Terraform initialized for $TARGET_DIR"
+
+# Plan Terraform changes for root infrastructure or specific service
+[group('infra')]
+plan service="": (init service)
+    #!/usr/bin/env bash
+    cd {{ source_directory() }}
+    if [ -z "{{ service }}" ]; then
+        TARGET_DIR="."
+        echo "Planning root GCP infrastructure..."
+    else
+        TARGET_DIR="services/{{ service }}"
+        echo "Planning Terraform changes for {{ service }} service..."
+    fi
+
+    terraform -chdir="$TARGET_DIR" plan \
+        -out=changes.tfplan \
+        -var-file=config/variable.tfvars
+
+    echo "✓ Terraform plan complete for $TARGET_DIR"
+    echo "  Plan saved to: $TARGET_DIR/changes.tfplan"
+
+# Apply Terraform changes (DANGEROUS - use with caution)
+[group('infra')]
+apply service="":
+    #!/usr/bin/env bash
+    cd {{ source_directory() }}
+    if [ -z "{{ service }}" ]; then
+        TARGET_DIR="."
+        echo "Applying root GCP infrastructure..."
+    else
+        TARGET_DIR="services/{{ service }}"
+        echo "Applying Terraform changes for {{ service }} service..."
+    fi
+
+    if [ ! -f "$TARGET_DIR/changes.tfplan" ]; then
+        echo "ERROR: No plan file found. Run 'just infra::plan {{ service }}' first"
+        exit 1
+    fi
+
+    echo "⚠️  WARNING: This will apply changes to GCP infrastructure!"
+    echo "Press Ctrl+C to cancel..."
+    sleep 3
+
+    terraform -chdir="$TARGET_DIR" apply "changes.tfplan"
+    rm -f "$TARGET_DIR/changes.tfplan"
+
+    echo "✓ Terraform apply complete for $TARGET_DIR"
+
+# Show Terraform output for a service
+[group('infra')]
+output service="":
+    #!/usr/bin/env bash
+    cd {{ source_directory() }}
+    if [ -z "{{ service }}" ]; then
+        TARGET_DIR="."
+    else
+        TARGET_DIR="services/{{ service }}"
+    fi
+
+    terraform -chdir="$TARGET_DIR" output
+
+# Validate Terraform configuration
+[group('infra')]
+validate service="":
+    #!/usr/bin/env bash
+    cd {{ source_directory() }}
+    if [ -z "{{ service }}" ]; then
+        TARGET_DIR="."
+        echo "Validating root GCP infrastructure..."
+    else
+        TARGET_DIR="services/{{ service }}"
+        echo "Validating Terraform configuration for {{ service }} service..."
+    fi
+
+    terraform -chdir="$TARGET_DIR" validate
+    echo "✓ Terraform configuration is valid"
+
+# Format Terraform files
+[group('infra')]
+format:
+    #!/usr/bin/env bash
+    cd {{ source_directory() }}
+    echo "Formatting Terraform files..."
+    terraform fmt -recursive
+    echo "✓ Terraform files formatted"
+
+# Show Terraform state
+[group('infra')]
+state service="":
+    #!/usr/bin/env bash
+    cd {{ source_directory() }}
+    if [ -z "{{ service }}" ]; then
+        TARGET_DIR="."
+    else
+        TARGET_DIR="services/{{ service }}"
+    fi
+
+    terraform -chdir="$TARGET_DIR" state list
+
+# Clean Terraform artifacts
+[group('maintenance')]
+clean:
+    #!/usr/bin/env bash
+    cd {{ source_directory() }}
+    echo "Cleaning Terraform artifacts..."
+    find . -name "*.tfplan" -type f -delete
+    find . -name ".terraform" -type d -exec rm -rf {} + 2>/dev/null || true
+    find . -name ".terraform.lock.hcl" -type f -delete 2>/dev/null || true
+    echo "✓ Terraform artifacts cleaned"
+
+# Destroy infrastructure (DANGEROUS - prompts for confirmation)
+[group('infra')]
+destroy service="":
+    #!/usr/bin/env bash
+    cd {{ source_directory() }}
+    if [ -z "{{ service }}" ]; then
+        TARGET_DIR="."
+        SCOPE="root GCP infrastructure"
+    else
+        TARGET_DIR="services/{{ service }}"
+        SCOPE="{{ service }} service"
+    fi
+
+    echo "⚠️  WARNING: This will DESTROY $SCOPE!"
+    echo "Type 'yes' to confirm destruction:"
+    read -r confirmation
+
+    if [ "$confirmation" != "yes" ]; then
+        echo "Destruction cancelled"
+        exit 1
+    fi
+
+    terraform -chdir="$TARGET_DIR" destroy \
+        -var-file=config/variable.tfvars
+
+    echo "✓ Infrastructure destroyed for $SCOPE"

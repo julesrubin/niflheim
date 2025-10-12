@@ -1,0 +1,116 @@
+#!/usr/bin/env -S just --justfile
+# Proxy Service (Caddy)
+
+# GCP Configuration (imported from root)
+GCP_PROJECT := "sandbox-jrubin"
+GCP_REGION := "europe-west1"
+ARTIFACT_REGISTRY := "sandbox-jrubin-gcr-niflheim-proxy"
+DOCKER_IMAGE := GCP_REGION + "-docker.pkg.dev/" + GCP_PROJECT + "/" + ARTIFACT_REGISTRY + "/proxy"
+
+# Default ports for local testing
+LOCAL_PORT := "8080"
+API_SERVICE_URL := "http://host.docker.internal:8000"
+PORTFOLIO_SERVICE_URL := "http://host.docker.internal:3000"
+
+# Build Docker image for GCP Cloud Run
+[group('docker')]
+image:
+    #!/usr/bin/env bash
+    cd {{ source_directory() }}
+    echo "Building proxy Docker image..."
+    docker buildx build \
+        --platform linux/amd64 \
+        --no-cache \
+        -t {{ DOCKER_IMAGE }}:latest \
+        .
+    echo "✓ Image built: {{ DOCKER_IMAGE }}:latest"
+
+# Push Docker image to GCP Artifact Registry
+[group('docker')]
+push:
+    #!/usr/bin/env bash
+    cd {{ source_directory() }}
+    echo "Pushing proxy image to GCP Artifact Registry..."
+    docker push {{ DOCKER_IMAGE }}:latest
+    echo "✓ Image pushed: {{ DOCKER_IMAGE }}:latest"
+
+# Run Docker container locally with default configuration
+[group('docker')]
+run:
+    #!/usr/bin/env bash
+    cd {{ source_directory() }}
+    echo "Running proxy container on port {{ LOCAL_PORT }}..."
+    docker run -p {{ LOCAL_PORT }}:{{ LOCAL_PORT }} \
+        -e PORT={{ LOCAL_PORT }} \
+        -e API_SERVICE_URL={{ API_SERVICE_URL }} \
+        -e PORTFOLIO_SERVICE_URL={{ PORTFOLIO_SERVICE_URL }} \
+        {{ DOCKER_IMAGE }}:latest
+
+# Run Docker container with custom environment variables
+[group('docker')]
+run-custom port api_url portfolio_url:
+    #!/usr/bin/env bash
+    cd {{ source_directory() }}
+    echo "Running proxy container on port {{ port }}..."
+    docker run -p {{ port }}:{{ port }} \
+        -e PORT={{ port }} \
+        -e API_SERVICE_URL={{ api_url }} \
+        -e PORTFOLIO_SERVICE_URL={{ portfolio_url }} \
+        {{ DOCKER_IMAGE }}:latest
+
+# Test proxy health check
+[group('test')]
+health:
+    #!/usr/bin/env bash
+    cd {{ source_directory() }}
+    echo "Testing proxy health endpoint..."
+    curl -f http://localhost:{{ LOCAL_PORT }}/health || echo "Health check failed!"
+
+# Test proxy routing (requires services to be running)
+[group('test')]
+test-routes:
+    #!/usr/bin/env bash
+    cd {{ source_directory() }}
+    echo "Testing proxy routing..."
+    echo "1. Testing root redirect..."
+    curl -I http://localhost:{{ LOCAL_PORT }}/ | grep "301"
+    echo "2. Testing /health endpoint..."
+    curl http://localhost:{{ LOCAL_PORT }}/health
+    echo ""
+    echo "3. Testing /api routing..."
+    curl -I http://localhost:{{ LOCAL_PORT }}/api/ || echo "API route test (may fail if API not running)"
+    echo "4. Testing /portfolio routing..."
+    curl -I http://localhost:{{ LOCAL_PORT }}/portfolio || echo "Portfolio route test (may fail if portfolio not running)"
+
+# Deploy to GCP Cloud Run
+[group('deploy')]
+deploy:
+    #!/usr/bin/env bash
+    cd {{ source_directory() }}
+    echo "Deploying proxy to GCP Cloud Run..."
+    gcloud run deploy proxy-service \
+        --image {{ DOCKER_IMAGE }}:latest \
+        --region {{ GCP_REGION }} \
+        --platform managed \
+        --allow-unauthenticated \
+        --port 8080 \
+        --project {{ GCP_PROJECT }}
+    echo "✓ Deployed to Cloud Run"
+
+# Build, push, and deploy in one command
+[group('deploy')]
+all: image push deploy
+
+# Validate Caddyfile syntax (requires Caddy installed locally)
+[group('test')]
+validate:
+    #!/usr/bin/env bash
+    cd {{ source_directory() }}
+    if command -v caddy &> /dev/null; then
+        echo "Validating Caddyfile..."
+        caddy validate --config Caddyfile
+        echo "✓ Caddyfile is valid"
+    else
+        echo "⚠ Caddy not installed locally, skipping validation"
+        echo "  Install Caddy from: https://caddyserver.com/docs/install"
+    fi

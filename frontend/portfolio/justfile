@@ -1,0 +1,107 @@
+#!/usr/bin/env -S just --justfile
+# Portfolio Frontend Service
+
+# GCP Configuration (imported from root)
+GCP_PROJECT := "sandbox-jrubin"
+GCP_REGION := "europe-west1"
+ARTIFACT_REGISTRY := "sandbox-jrubin-gcr-niflheim-portfolio"
+DOCKER_IMAGE := GCP_REGION + "-docker.pkg.dev/" + GCP_PROJECT + "/" + ARTIFACT_REGISTRY + "/portfolio"
+
+# Internal helper to check yarn is available
+_check-yarn:
+    #!/usr/bin/env bash
+    if ! command -v yarn &> /dev/null; then
+        echo "ERROR: Yarn is required but not installed."
+        echo "Please install Yarn from: https://yarnpkg.com/"
+        exit 1
+    fi
+
+# Install dependencies using Yarn
+[group('setup')]
+install: _check-yarn
+    cd {{ source_directory() }} && yarn install
+
+# Start development server
+[group('dev')]
+start: _check-yarn
+    cd {{ source_directory() }} && yarn start
+
+# Build for production
+[group('dev')]
+build: _check-yarn
+    cd {{ source_directory() }} && yarn build
+
+# Build TailwindCSS
+[group('dev')]
+build-css: _check-yarn
+    cd {{ source_directory() }} && yarn build:css
+
+# Run tests with Jest
+[group('quality')]
+test: _check-yarn
+    cd {{ source_directory() }} && yarn test --watchAll=false
+
+# Run tests in watch mode
+[group('quality')]
+test-watch: _check-yarn
+    cd {{ source_directory() }} && yarn test
+
+# Build Docker image for GCP Cloud Run
+[group('docker')]
+image:
+    #!/usr/bin/env bash
+    cd {{ source_directory() }}
+    echo "Building portfolio Docker image..."
+    docker buildx build \
+        --platform linux/amd64 \
+        --no-cache \
+        -t {{ DOCKER_IMAGE }}:latest \
+        .
+    echo "✓ Image built: {{ DOCKER_IMAGE }}:latest"
+
+# Push Docker image to GCP Artifact Registry
+[group('docker')]
+push:
+    #!/usr/bin/env bash
+    cd {{ source_directory() }}
+    echo "Pushing portfolio image to GCP Artifact Registry..."
+    docker push {{ DOCKER_IMAGE }}:latest
+    echo "✓ Image pushed: {{ DOCKER_IMAGE }}:latest"
+
+# Run Docker container locally
+[group('docker')]
+run:
+    #!/usr/bin/env bash
+    cd {{ source_directory() }}
+    echo "Running portfolio container on port 8080..."
+    docker run -p 8080:80 {{ DOCKER_IMAGE }}:latest
+
+# Deploy to GCP Cloud Run
+[group('deploy')]
+deploy:
+    #!/usr/bin/env bash
+    cd {{ source_directory() }}
+    echo "Deploying portfolio to GCP Cloud Run..."
+    gcloud run deploy portfolio \
+        --image {{ DOCKER_IMAGE }}:latest \
+        --region {{ GCP_REGION }} \
+        --platform managed \
+        --allow-unauthenticated \
+        --port 8080 \
+        --project {{ GCP_PROJECT }}
+    echo "✓ Deployed to Cloud Run"
+
+# Build, push, and deploy in one command
+[group('deploy')]
+all: image push deploy
+
+# Clean build artifacts
+[group('maintenance')]
+clean:
+    #!/usr/bin/env bash
+    cd {{ source_directory() }}
+    echo "Cleaning portfolio build artifacts..."
+    rm -rf build
+    rm -rf node_modules
+    rm -rf .cache
+    echo "✓ Clean complete"
