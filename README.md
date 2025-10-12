@@ -45,9 +45,10 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Prerequisites
 
+- [Just](https://github.com/casey/just) - Command runner (`brew install just` on macOS)
 - Docker and Docker Compose
 - Node.js (v18+) and Yarn
-- Python (3.13+)
+- Python (3.13+) and [uv](https://docs.astral.sh/uv/) package manager
 - Google Cloud SDK (for deployment)
 - Terraform (for infrastructure)
 
@@ -59,32 +60,36 @@ git clone https://github.com/julesrubin/niflheim.git
 cd niflheim
 ```
 
-2. Set up the frontend:
+2. Check that all required tools are installed:
 ```bash
-cd frontend/portfolio
-yarn install
-yarn build:css
+just check-tools
 ```
 
-3. Set up the backend API:
+3. Set up the frontend:
 ```bash
-cd backend/api
-pip install -e .
+just portfolio::install
+just portfolio::build-css
 ```
 
-4. Build and run with Docker:
+4. Set up the backend API:
 ```bash
-# Build portfolio image
-make image portfolio
+just api::install
+```
 
-# Build proxy image  
-make image proxy
+5. Build and run with Docker:
+```bash
+# Build images
+just portfolio::image
+just api::image
+just proxy::image
 
-# Run portfolio locally
-make run portfolio
+# Or build all at once
+just build-all-images
 
-# Run proxy locally
-make run proxy
+# Run services locally
+just portfolio::run        # Portfolio on port 8080
+just api::run              # API on port 8000
+just proxy::run            # Proxy on port 8080
 ```
 
 ## 🔧 Running the tests <a name = "tests"></a>
@@ -94,8 +99,22 @@ The project includes automated tests for the React components.
 ### Frontend Tests
 
 ```bash
-cd frontend/portfolio
-yarn test
+just portfolio::test
+```
+
+### Backend Tests
+
+```bash
+just api::format           # Format code with ruff
+just api::lint             # Lint code with ruff
+just api::test             # Run tests with coverage
+just api::pre-commit       # Run all quality checks
+```
+
+### Run All Quality Checks
+
+```bash
+just quality-all           # Run tests and linting for all services
 ```
 
 ### Component Tests
@@ -167,16 +186,33 @@ My infrastructure leverages multiple **Google Cloud Platform** services:
 - **Google Cloud Storage** for Terraform state management
 - **Google Cloud Resource Manager** for project-level resource organization
 
-Deploy using my custom Makefile:
+Deploy using Just commands:
 ```bash
 # Initialize Terraform with GCS backend
-make init
+just infra::init              # Initialize root infrastructure
+just infra::init portfolio    # Initialize portfolio service
+just infra::init api          # Initialize API service
+just infra::init proxy        # Initialize proxy service
+just tf-init-all              # Initialize all services at once
 
 # Plan deployment across all GCP services
-make plan
+just infra::plan              # Plan root infrastructure
+just infra::plan portfolio    # Plan portfolio service
+just tf-plan-all              # Plan all services
 
-# Apply infrastructure to Google Cloud Platform
-make apply
+# Apply infrastructure to Google Cloud Platform (DANGEROUS)
+just infra::apply             # Apply root infrastructure
+just infra::apply portfolio   # Apply portfolio service
+
+# Deploy services to Cloud Run
+just portfolio::deploy        # Deploy portfolio to Cloud Run
+just api::deploy              # Deploy API to Cloud Run
+just proxy::deploy            # Deploy proxy to Cloud Run
+
+# All-in-one deployment (build + push + deploy)
+just portfolio::all           # Build, push, and deploy portfolio
+just api::all                 # Build, push, and deploy API
+just proxy::all               # Build, push, and deploy proxy
 ```
 
 ## ⛏️ Built Using <a name = "built_using"></a>
@@ -200,6 +236,8 @@ make apply
 - [Google Cloud Build](https://cloud.google.com/build) - CI/CD Pipeline
 
 ### Tools & Development
+- [Just](https://github.com/casey/just) - Command Runner
+- [uv](https://docs.astral.sh/uv/) - Python Package Manager
 - [Nginx](https://nginx.org/) - Web Server
 - [PostCSS](https://postcss.org/) - CSS Processing
 - [EmailJS](https://www.emailjs.com/) - Email Integration
@@ -221,12 +259,3 @@ niflheim/
 ## ✍️ Authors <a name = "authors"></a>
 
 - **Jules Rubin** - [@julesrubin](https://github.com/julesrubin) - Full-stack development, architecture, and deployment
-
-Data and AI student at EFREI Paris, passionate about technology and sports with over a decade of soccer experience.
-
-## 🎉 Acknowledgements <a name = "acknowledgement"></a>
-
-- EFREI Paris for providing excellent education in Data Science and AI
-- The open-source community for the amazing tools and frameworks
-- All the contributors to the technologies used in this project
-- Inspiration from modern portfolio designs and best practices
