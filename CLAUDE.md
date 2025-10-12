@@ -25,96 +25,147 @@ niflheim/
 │   ├── services/               # Service-specific Terraform configs
 │   └── modules/                # Reusable Terraform modules
 ├── scripts/                    # Deployment and utility scripts
-├── Makefile                    # Build, deploy, and infrastructure commands
+├── justfile                    # Root build system (Just task runner)
 └── cloudbuild.yaml             # GCP Cloud Build CI/CD configuration
+```
+
+## Build System
+
+Niflheim uses **Just** (a modern command runner) instead of Make for all build, deployment, and infrastructure commands. Each service has its own justfile with service-specific commands, and the root justfile imports all service justfiles with namespaces.
+
+**Why Just over Make:**
+- Modular service-specific justfiles with imports
+- Better parameter handling and typed arguments
+- Cross-platform consistency
+- Built-in recipe documentation with groups
+- Can run commands from any directory using `source_directory()`
+
+### Quick Start
+
+```bash
+# Install Just: https://github.com/casey/just
+# macOS: brew install just
+# Linux: cargo install just
+
+# Show all available commands
+just --list
+
+# Show detailed help
+just help
+
+# Check required tools are installed
+just check-tools
 ```
 
 ## Common Development Commands
 
+All commands use the `just` task runner. You can run them from any directory in the repository.
+
 ### Local Development
 
-**Frontend (Portfolio)**:
+**Portfolio (Frontend)**:
 ```bash
-cd frontend/portfolio
-yarn install
-yarn start                      # Dev server on localhost:3000
-yarn test                       # Run tests
-yarn build                      # Production build
+# From root directory or frontend/portfolio:
+just portfolio::install         # Install dependencies with Yarn
+just portfolio::start           # Dev server on localhost:3000
+just portfolio::test            # Run tests
+just portfolio::build           # Production build
+just portfolio::build-css       # Build TailwindCSS
 ```
 
-**Backend (API)**:
+**API (Backend)**:
 ```bash
-cd backend/api
-uv sync --active                # Install dependencies with uv
-uv run uvicorn src.api.main:app --reload --host 0.0.0.0 --port 8000
-# API available at http://localhost:8000/api/
+# From root directory or backend/api:
+just api::install               # Install dependencies with UV
+just api::run                   # Run API server locally (port 8000)
+just api::serve                 # Run with custom host/port
+just api::format                # Format code with ruff
+just api::lint                  # Lint code with ruff
+just api::test                  # Run tests with coverage
+just api::pre-commit            # Run all quality checks
 ```
 
-**Proxy (Local Testing)**:
+**Proxy**:
 ```bash
-cd backend/proxy
-docker build -t niflheim-proxy .
-docker run -p 8080:8080 \
-  -e PORT=8080 \
-  -e API_SERVICE_URL=http://host.docker.internal:8000 \
-  -e PORTFOLIO_SERVICE_URL=http://host.docker.internal:3000 \
-  niflheim-proxy
+# From root directory or backend/proxy:
+just proxy::image               # Build Docker image
+just proxy::run                 # Run locally (default config)
+just proxy::run-custom 8080 http://api:8000 http://portfolio:3000
+just proxy::health              # Test health endpoint
+just proxy::test-routes         # Test all routing rules
+just proxy::validate            # Validate Caddyfile (if Caddy installed)
 ```
 
 ### Docker Operations
 
-**Build images** (from repository root):
+**Build images**:
 ```bash
-make image portfolio            # Build portfolio Docker image
-make image proxy                # Build proxy Docker image
-```
-
-**Run containers locally**:
-```bash
-make run portfolio              # Run portfolio on port 8080
-make run proxy                  # Run proxy on port 8080
+just portfolio::image           # Build portfolio Docker image
+just api::image                 # Build API Docker image
+just proxy::image               # Build proxy Docker image
+just build-all-images           # Build all images
 ```
 
 **Push to GCP Artifact Registry**:
 ```bash
-make push portfolio
-make push proxy
+just portfolio::push            # Push portfolio image
+just api::push                  # Push API image
+just proxy::push                # Push proxy image
+just push-all-images            # Push all images
 ```
 
-**Deploy to Cloud Run**:
+**Run containers locally**:
 ```bash
-make deploy portfolio
-make deploy proxy
+just portfolio::run             # Run portfolio on port 8080
+just api::run-container         # Run API on port 8000
+just proxy::run                 # Run proxy on port 8080
+```
+
+**Deploy to Cloud Run** (DANGEROUS - requires GCP credentials):
+```bash
+just portfolio::deploy          # Deploy portfolio
+just api::deploy                # Deploy API
+just proxy::deploy              # Deploy proxy
 ```
 
 **All-in-one deployment** (build + push + deploy):
 ```bash
-make all-portfolio
-make all-proxy
+just portfolio::all             # Portfolio: image → push → deploy
+just api::all                   # API: image → push → deploy
+just proxy::all                 # Proxy: image → push → deploy
 ```
 
 ### Infrastructure Management (Terraform)
 
-**Initialize Terraform** (required first time or after backend changes):
+**Terraform commands** (via infra module):
 ```bash
-make init                       # Initialize root gcp/ directory
-make init portfolio             # Initialize specific service
-make init proxy
+# Initialize Terraform
+just infra::init                # Initialize root infrastructure
+just infra::init portfolio      # Initialize portfolio service
+just infra::init api            # Initialize API service
+just infra::init proxy          # Initialize proxy service
+just tf-init-all                # Initialize all services
+
+# Plan changes
+just infra::plan                # Plan root infrastructure
+just infra::plan portfolio      # Plan portfolio service
+just infra::plan api            # Plan API service
+just infra::plan proxy          # Plan proxy service
+just tf-plan-all                # Plan all services
+
+# Apply changes (DANGEROUS)
+just infra::apply               # Apply root infrastructure
+just infra::apply portfolio     # Apply portfolio service
+
+# Other Terraform commands
+just infra::validate            # Validate configuration
+just infra::format              # Format Terraform files
+just infra::output              # Show outputs
+just infra::state               # Show state
+just infra::destroy portfolio   # Destroy service (prompts confirmation)
 ```
 
-**Plan infrastructure changes**:
-```bash
-make plan                       # Plan root infrastructure
-make plan portfolio             # Plan portfolio service
-make plan proxy                 # Plan proxy service
-```
-
-**Apply infrastructure changes**:
-```bash
-make apply                      # Apply planned changes
-```
-
-Note: `make plan` automatically runs `make init`, so you can typically skip the init step.
+Note: `just infra::plan` automatically runs `init` as a dependency.
 
 ## High-Level Architecture
 
@@ -187,13 +238,16 @@ The FastAPI app uses `root_path="/api"`:
 ## Prerequisites for Development
 
 ### Required Software
+- **Just**: Command runner - `brew install just` (macOS) or see https://github.com/casey/just
 - **Node.js**: v18+ (frontend)
 - **Python**: 3.13+ (backend - enforced via .python-version)
-- **uv**: Python package manager for backend
+- **uv**: Python package manager for backend - https://docs.astral.sh/uv/
 - **Docker**: Container builds and local testing
 - **Terraform**: v1.8.0+ (infrastructure management)
 - **Google Cloud SDK**: For GCP deployment (`gcloud` CLI)
 - **Yarn**: Frontend package manager
+
+Run `just check-tools` to verify all required tools are installed.
 
 ### GCP Setup (First-Time Deployment)
 1. Enable required GCP APIs:
@@ -275,13 +329,52 @@ curl http://localhost:8080/portfolio
 - Verify environment variables are set correctly
 - Check Caddy logs for routing issues
 
+## Maintenance Commands
+
+```bash
+# Clean all build artifacts
+just clean                      # Root-level clean (all services)
+just portfolio::clean           # Clean portfolio artifacts
+just api::clean                 # Clean API artifacts
+just infra::clean               # Clean Terraform artifacts
+
+# Run quality checks across all services
+just quality-all                # Run tests and linting for all services
+```
+
+## Justfile Architecture
+
+The repository uses a modular justfile structure with imports:
+
+```
+justfile                        # Root orchestrator, imports all service justfiles
+├── frontend/portfolio/justfile # Portfolio-specific commands
+├── backend/api/justfile        # API-specific commands
+├── backend/proxy/justfile      # Proxy-specific commands
+└── gcp/justfile                # Infrastructure commands
+```
+
+**Key features:**
+- Each service justfile can be run independently from its directory
+- Root justfile imports service justfiles with namespaces (portfolio::, api::, proxy::, infra::)
+- All commands use `cd {{ source_directory() }}` to support execution from any directory
+- Commands are organized into groups for better discovery (`just --list`)
+- GCP configuration (project, region, registries) defined at root level
+
 ## Contributing
 
 When adding new services:
 1. Create service directory in appropriate location (frontend/backend)
 2. Add Dockerfile for containerization
-3. Create Terraform configuration in `gcp/services/<service>`
-4. Update Caddyfile with new routing rules
-5. Add Makefile targets for build/deploy operations
-6. Create service-specific CLAUDE.md documenting architecture
-7. Update root CLAUDE.md with integration points
+3. Create service-specific `justfile` with standard recipe groups:
+   - `[setup]`: Install dependencies
+   - `[dev]`: Development commands (start, run)
+   - `[quality]`: Format, lint, test
+   - `[docker]`: image, push, run
+   - `[deploy]`: deploy, all
+   - `[maintenance]`: clean
+4. Import new justfile in root justfile: `mod <name> '<path>/justfile'`
+5. Create Terraform configuration in `gcp/services/<service>`
+6. Update Caddyfile with new routing rules
+7. Create service-specific CLAUDE.md documenting architecture
+8. Update root CLAUDE.md with integration points
