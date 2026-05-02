@@ -2,15 +2,14 @@
 # Niflheim - Cloud-Native Hosting Platform
 
 # GCP Configuration
-GCP_PROJECT := "sandbox-jrubin"
+GCP_PROJECT := "portfolio-jrubin"
 GCP_REGION := "europe-west1"
-ARTIFACT_REGISTRY_PORTFOLIO := "sandbox-jrubin-gcr-niflheim-portfolio"
-ARTIFACT_REGISTRY_PROXY := "sandbox-jrubin-gcr-niflheim-proxy"
-ARTIFACT_REGISTRY_API := "sandbox-jrubin-gcr-niflheim-api"
+ARTIFACT_REGISTRY := "portfolio-jrubin-gcr-niflheim"
 
 # Import service justfiles with namespaces
 mod portfolio 'frontend/portfolio/justfile'
 mod api 'backend/api/justfile'
+mod macrow 'backend/macrow/justfile'
 mod proxy 'backend/proxy/justfile'
 mod infra 'gcp/justfile'
 
@@ -28,6 +27,7 @@ help:
     @echo "Available command groups:"
     @echo "  - portfolio::*  Frontend portfolio commands"
     @echo "  - api::*        Backend API commands"
+    @echo "  - macrow::*     Backend Macrow (food tracking) commands"
     @echo "  - proxy::*      Proxy service commands"
     @echo "  - infra::*      Infrastructure (Terraform) commands"
     @echo ""
@@ -40,6 +40,7 @@ build-all-images:
     @echo "Building all Docker images..."
     cd {{ source_directory() }} && just portfolio::image
     cd {{ source_directory() }} && just api::image
+    cd {{ source_directory() }} && just macrow::image
     cd {{ source_directory() }} && just proxy::image
 
 # Push all Docker images to GCP Artifact Registry
@@ -48,6 +49,7 @@ push-all-images:
     @echo "Pushing all Docker images..."
     cd {{ source_directory() }} && just portfolio::push
     cd {{ source_directory() }} && just api::push
+    cd {{ source_directory() }} && just macrow::push
     cd {{ source_directory() }} && just proxy::push
 
 # Run all quality checks across services
@@ -57,6 +59,8 @@ quality-all:
     cd {{ source_directory() }} && just portfolio::test
     cd {{ source_directory() }} && just api::lint
     cd {{ source_directory() }} && just api::test
+    cd {{ source_directory() }} && just macrow::lint
+    cd {{ source_directory() }} && just macrow::test
 
 # Initialize all Terraform services
 [group('infra')]
@@ -65,6 +69,7 @@ tf-init-all:
     cd {{ source_directory() }} && just infra::init
     cd {{ source_directory() }} && just infra::init portfolio
     cd {{ source_directory() }} && just infra::init api
+    cd {{ source_directory() }} && just infra::init macrow
     cd {{ source_directory() }} && just infra::init proxy
 
 # Plan all Terraform services
@@ -74,6 +79,7 @@ tf-plan-all:
     cd {{ source_directory() }} && just infra::plan
     cd {{ source_directory() }} && just infra::plan portfolio
     cd {{ source_directory() }} && just infra::plan api
+    cd {{ source_directory() }} && just infra::plan macrow
     cd {{ source_directory() }} && just infra::plan proxy
 
 # Clean all build artifacts
@@ -85,6 +91,7 @@ clean:
     rm -rf frontend/portfolio/build
     rm -rf frontend/portfolio/node_modules
     rm -rf backend/api/.venv
+    rm -rf backend/macrow/.venv
     find . -name "*.tfplan" -type f -delete
     find . -name ".terraform" -type d -exec rm -rf {} + 2>/dev/null || true
     echo "Clean complete!"

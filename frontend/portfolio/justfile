@@ -2,9 +2,9 @@
 # Portfolio Frontend Service
 
 # GCP Configuration (imported from root)
-GCP_PROJECT := "sandbox-jrubin"
+GCP_PROJECT := "portfolio-jrubin"
 GCP_REGION := "europe-west1"
-ARTIFACT_REGISTRY := "sandbox-jrubin-gcr-niflheim-portfolio"
+ARTIFACT_REGISTRY := "portfolio-jrubin-gcr-niflheim"
 DOCKER_IMAGE := GCP_REGION + "-docker.pkg.dev/" + GCP_PROJECT + "/" + ARTIFACT_REGISTRY + "/portfolio"
 
 # Internal helper to check yarn is available

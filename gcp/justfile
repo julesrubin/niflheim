@@ -2,7 +2,7 @@
 # GCP Infrastructure (Terraform)
 
 # GCP Configuration
-GCP_PROJECT := "sandbox-jrubin"
+GCP_PROJECT := "portfolio-jrubin"
 GCP_REGION := "europe-west1"
 
 # Internal helper to check Terraform is available

@@ -2,9 +2,9 @@
 # Proxy Service (Caddy)
 
 # GCP Configuration (imported from root)
-GCP_PROJECT := "sandbox-jrubin"
+GCP_PROJECT := "portfolio-jrubin"
 GCP_REGION := "europe-west1"
-ARTIFACT_REGISTRY := "sandbox-jrubin-gcr-niflheim-proxy"
+ARTIFACT_REGISTRY := "portfolio-jrubin-gcr-niflheim"
 DOCKER_IMAGE := GCP_REGION + "-docker.pkg.dev/" + GCP_PROJECT + "/" + ARTIFACT_REGISTRY + "/proxy"
 
 # Default ports for local testing

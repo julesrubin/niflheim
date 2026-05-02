@@ -2,9 +2,9 @@
 # API Backend Service
 
 # GCP Configuration (imported from root)
-GCP_PROJECT := "sandbox-jrubin"
+GCP_PROJECT := "portfolio-jrubin"
 GCP_REGION := "europe-west1"
-ARTIFACT_REGISTRY := "sandbox-jrubin-gcr-niflheim-api"
+ARTIFACT_REGISTRY := "portfolio-jrubin-gcr-niflheim"
 DOCKER_IMAGE := GCP_REGION + "-docker.pkg.dev/" + GCP_PROJECT + "/" + ARTIFACT_REGISTRY + "/api"
 
 # Internal helper to check UV is available
