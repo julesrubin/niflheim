@@ -17,6 +17,15 @@
         }
     }
 
+    # Route requests for /macrow to the "macrow" service
+    handle_path /macrow* {
+        # Proxy the request to the macrow service.
+        reverse_proxy {$MACROW_SERVICE_URL} {
+            header_up Host {http.reverse_proxy.upstream.hostport}
+            header_up X-Forwarded-Proto https
+        }
+    }
+
     # Route requests for /portfolio to the "portfolio" service
     handle_path /portfolio* {
         # Proxy the request to the portfolio service.

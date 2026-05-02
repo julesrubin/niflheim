@@ -40,6 +40,14 @@ locals {
         _SUBFOLDER      = "gcp/services/api"
         _DOCKER_FOLDERS = "backend/api"
       }
+    },
+    macrow = {
+      included_files = ["gcp/services/macrow/**", "backend/macrow/**"]
+      ignored_files  = []
+      substitutions = {
+        _SUBFOLDER      = "gcp/services/macrow"
+        _DOCKER_FOLDERS = "backend/macrow"
+      }
     }
   }
 

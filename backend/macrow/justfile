@@ -1,0 +1,114 @@
+#!/usr/bin/env -S just --justfile
+# Macrow Backend Service
+
+# GCP Configuration (imported from root)
+GCP_PROJECT := "portfolio-jrubin"
+GCP_REGION := "europe-west1"
+ARTIFACT_REGISTRY := "portfolio-jrubin-gcr-niflheim"
+DOCKER_IMAGE := GCP_REGION + "-docker.pkg.dev/" + GCP_PROJECT + "/" + ARTIFACT_REGISTRY + "/macrow"
+
+# Internal helper to check UV is available
+_check-uv:
+    #!/usr/bin/env bash
+    if ! command -v uv &> /dev/null; then
+        echo "ERROR: UV is required but not installed."
+        echo "Please install UV from: https://docs.astral.sh/uv/"
+        exit 1
+    fi
+
+# Install dependencies using UV
+[group('setup')]
+install: _check-uv
+    cd {{ source_directory() }} && uv sync --active
+
+# Run Macrow server locally
+[group('dev')]
+run: _check-uv
+    cd {{ source_directory() }} && uv run uvicorn src.macrow.main:app --reload --host 0.0.0.0 --port 8000
+
+# Run Macrow server with custom host and port
+[group('dev')]
+serve host="0.0.0.0" port="8000": _check-uv
+    cd {{ source_directory() }} && uv run uvicorn src.macrow.main:app --reload --host {{ host }} --port {{ port }}
+
+# Format code with ruff
+[group('quality')]
+format: _check-uv
+    cd {{ source_directory() }} && uv tool run ruff format src/
+
+# Lint code with ruff
+[group('quality')]
+lint: _check-uv
+    cd {{ source_directory() }} && uv tool run ruff check src/
+
+# Run full test suite with coverage
+[group('quality')]
+test: _check-uv
+    cd {{ source_directory() }} && uv run pytest --cov=src/macrow --cov-report=term-missing
+
+# Run all quality checks (format + lint + test) - required before commit
+[group('quality')]
+pre-commit: format lint test
+
+# Build Docker image for GCP Cloud Run
+[group('docker')]
+image:
+    #!/usr/bin/env bash
+    cd {{ source_directory() }}
+    echo "Building Macrow Docker image..."
+    docker buildx build \
+        --platform linux/amd64 \
+        --no-cache \
+        -t {{ DOCKER_IMAGE }}:latest \
+        .
+    echo "✓ Image built: {{ DOCKER_IMAGE }}:latest"
+
+# Push Docker image to GCP Artifact Registry
+[group('docker')]
+push:
+    #!/usr/bin/env bash
+    cd {{ source_directory() }}
+    echo "Pushing Macrow image to GCP Artifact Registry..."
+    docker push {{ DOCKER_IMAGE }}:latest
+    echo "✓ Image pushed: {{ DOCKER_IMAGE }}:latest"
+
+# Run Docker container locally
+[group('docker')]
+run-container:
+    #!/usr/bin/env bash
+    cd {{ source_directory() }}
+    echo "Running Macrow container on port 8000..."
+    docker run -p 8000:8000 {{ DOCKER_IMAGE }}:latest
+
+# Deploy to GCP Cloud Run
+[group('deploy')]
+deploy:
+    #!/usr/bin/env bash
+    cd {{ source_directory() }}
+    echo "Deploying Macrow to GCP Cloud Run..."
+    gcloud run deploy macrow \
+        --image {{ DOCKER_IMAGE }}:latest \
+        --region {{ GCP_REGION }} \
+        --platform managed \
+        --allow-unauthenticated \
+        --port 8000 \
+        --project {{ GCP_PROJECT }}
+    echo "✓ Deployed to Cloud Run"
+
+# Build, push, and deploy in one command
+[group('deploy')]
+all: image push deploy
+
+# Clean build artifacts and virtual environment
+[group('maintenance')]
+clean:
+    #!/usr/bin/env bash
+    cd {{ source_directory() }}
+    echo "Cleaning Macrow build artifacts..."
+    rm -rf .venv
+    rm -rf .pytest_cache
+    rm -rf .coverage
+    rm -rf dist
+    rm -rf *.egg-info
+    find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+    echo "✓ Clean complete"

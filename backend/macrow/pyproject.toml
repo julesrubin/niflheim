@@ -1,0 +1,21 @@
+[project]
+name = "macrow"
+version = "0.1.0"
+description = "Personal food tracking service for julesrubin.com"
+readme = "README.md"
+authors = [
+    { name = "Jules Rubin", email = "58521821+julesrubin@users.noreply.github.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.116.1",
+    "pydantic>=2.11.7",
+    "uvicorn>=0.35.0",
+]
+
+[project.scripts]
+macrow = "macrow:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

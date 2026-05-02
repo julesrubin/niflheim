@@ -9,6 +9,7 @@ Personal cloud-native hosting platform for **https://www.julesrubin.com**. Caddy
 Service-specific guidance lives in:
 - `frontend/portfolio/CLAUDE.md` — React 18 + Tailwind + Framer Motion
 - `backend/api/CLAUDE.md` — FastAPI + uv
+- `backend/macrow/CLAUDE.md` — FastAPI + uv (food tracking)
 - `backend/proxy/CLAUDE.md` — Caddy
 
 ## Request flow & path-prefix invariants
@@ -16,6 +17,7 @@ Service-specific guidance lives in:
 ```
 client → Caddy (/) → portfolio (/portfolio/*)
                    → api       (/api/*)
+                   → macrow    (/macrow/*)
                    → 301 /  → /portfolio
                    → 200 /health
 ```
@@ -24,8 +26,9 @@ The path prefix is wired in **three coupled places** — touching one without th
 
 | Service   | Where it's set                                              |
 |-----------|-------------------------------------------------------------|
-| Caddy     | `backend/proxy/Caddyfile` — `handle_path /api/*`, `handle_path /portfolio/*` (strips prefix before forwarding) |
+| Caddy     | `backend/proxy/Caddyfile` — `handle_path /api/*`, `handle_path /macrow/*`, `handle_path /portfolio/*` (strips prefix before forwarding) |
 | API       | `backend/api/src/api/main.py` — `FastAPI(root_path="/api")` |
+| Macrow    | `backend/macrow/src/macrow/main.py` — `FastAPI(root_path="/macrow")` |
 | Portfolio | `frontend/portfolio/package.json` `homepage: "/portfolio"` + `<BrowserRouter basename="/portfolio">` in `src/App.js` |
 
 Caddy strips the prefix, so upstream services see clean paths and rebuild URLs from `root_path` / `basename`. If you add a new service, mirror this pattern.
@@ -36,6 +39,7 @@ Just is the canonical task runner. Service justfiles are imported as namespaces 
 
 - `portfolio::*` → `frontend/portfolio/justfile`
 - `api::*`       → `backend/api/justfile`
+- `macrow::*`    → `backend/macrow/justfile`
 - `proxy::*`     → `backend/proxy/justfile`
 - `infra::*`     → `gcp/justfile`
 
@@ -45,7 +49,7 @@ Useful entry points:
 - `just infra::plan <service>` — Terraform plan for one service (`portfolio`, `api`, `proxy`, or empty for root)
 - `just <ns>::image` and `just <ns>::push` — build/push a single service image
 
-GCP project is hard-coded as `sandbox-jrubin` (region `europe-west1`) in the root and `gcp/` justfiles — single source of truth, change there if forking.
+GCP project is hard-coded as `portfolio-jrubin` (region `europe-west1`) in the root and `gcp/` justfiles — single source of truth, change there if forking.
 
 ## CI/CD (Cloud Build)
 
@@ -69,7 +73,7 @@ Key substitutions per trigger: `_SUBFOLDER` (Terraform dir), `_DOCKER_FOLDERS` (
 
 ```bash
 gcloud auth login && gcloud auth application-default login
-gcloud config set project sandbox-jrubin
+gcloud config set project portfolio-jrubin
 gcloud auth configure-docker europe-west1-docker.pkg.dev
 ```
 
