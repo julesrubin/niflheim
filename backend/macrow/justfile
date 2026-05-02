@@ -24,12 +24,12 @@ install: _check-uv
 # Run Macrow server locally
 [group('dev')]
 run: _check-uv
-    cd {{ source_directory() }} && uv run uvicorn src.macrow.main:app --reload --host 0.0.0.0 --port 8000
+    cd {{ source_directory() }} && uv run uvicorn src.app.main:app --reload --host 0.0.0.0 --port 8000
 
 # Run Macrow server with custom host and port
 [group('dev')]
 serve host="0.0.0.0" port="8000": _check-uv
-    cd {{ source_directory() }} && uv run uvicorn src.macrow.main:app --reload --host {{ host }} --port {{ port }}
+    cd {{ source_directory() }} && uv run uvicorn src.app.main:app --reload --host {{ host }} --port {{ port }}
 
 # Format code with ruff
 [group('quality')]
@@ -44,7 +44,7 @@ lint: _check-uv
 # Run full test suite with coverage
 [group('quality')]
 test: _check-uv
-    cd {{ source_directory() }} && uv run pytest --cov=src/macrow --cov-report=term-missing
+    cd {{ source_directory() }} && uv run pytest --cov=src/app --cov-report=term-missing
 
 # Run all quality checks (format + lint + test) - required before commit
 [group('quality')]
