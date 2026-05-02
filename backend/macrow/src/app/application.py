@@ -5,7 +5,7 @@ import logging
 from fastapi import FastAPI
 
 from .config.settings import settings
-from .routes import health
+from .routes import foods, health
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +21,7 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(health.router)
+    app.include_router(foods.router)
 
     logger.info(
         "FastAPI application created: %s v%s (root_path=%s)",
