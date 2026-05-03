@@ -5,6 +5,10 @@ from fastapi.responses import JSONResponse
 from ..models.common import ApiError, ApiErrorResponse
 
 
+class OffUnavailable(Exception):
+    """Raised by services.off when OFF returns 5xx, 429, or fails transport."""
+
+
 def error_response(
     status_code: int,
     code: str,
