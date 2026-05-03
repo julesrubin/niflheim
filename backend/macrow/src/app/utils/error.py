@@ -9,6 +9,10 @@ class OffUnavailable(Exception):
     """Raised by services.off when OFF returns 5xx, 429, or fails transport."""
 
 
+class JournalItemNotFound(Exception):
+    """Raised by services.journal when a logged-food item can't be located in any meal."""
+
+
 def error_response(
     status_code: int,
     code: str,
@@ -42,4 +46,31 @@ def off_unavailable() -> JSONResponse:
         502,
         "OFF_UNAVAILABLE",
         "Open Food Facts is temporarily unavailable.",
+    )
+
+
+def invalid_date(value: str) -> JSONResponse:
+    return error_response(
+        400,
+        "INVALID_DATE",
+        f"Date {value!r} must be formatted as YYYY-MM-DD.",
+        {"date": value},
+    )
+
+
+def invalid_meal_kind(value: str, allowed: tuple[str, ...]) -> JSONResponse:
+    return error_response(
+        400,
+        "INVALID_MEAL_KIND",
+        f"Meal kind {value!r} must be one of {list(allowed)}.",
+        {"kind": value, "allowed": list(allowed)},
+    )
+
+
+def journal_item_not_found(item_id: str) -> JSONResponse:
+    return error_response(
+        404,
+        "JOURNAL_ITEM_NOT_FOUND",
+        f"No logged-food item with id {item_id!r} on this day.",
+        {"itemId": item_id},
     )
