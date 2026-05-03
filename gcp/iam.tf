@@ -42,6 +42,10 @@ locals {
       role        = "roles/iam.serviceAccountAdmin"
       description = "Grant Cloud Build SA Service Account Admin role (to manage service accounts)"
     }
+    "datastore-owner-access" = {
+      role        = "roles/datastore.owner"
+      description = "Grant Cloud Build SA permission to create and manage Firestore databases"
+    }
   }
 }
 
