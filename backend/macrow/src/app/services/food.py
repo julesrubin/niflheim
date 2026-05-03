@@ -20,6 +20,7 @@ from google.cloud.firestore_v1.base_query import FieldFilter
 
 from ..config.constants import FIRESTORE_FOODS_COLLECTION
 from ..models.food import Food
+from .off import OffClient
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,22 @@ class FoodRepository:
         if not snap.exists:
             return None
         return _doc_to_food(snap.to_dict() or {})
+
+    async def get_many(self, barcodes: list[str]) -> dict[str, Food]:
+        """Batched read by barcode. Returns {barcode: Food} for hits; misses omitted.
+
+        Lets callers (e.g. the journal route) embed Food into a list of items
+        in a single round-trip rather than N sequential reads.
+        """
+        if not barcodes:
+            return {}
+        refs = [self._foods.document(b) for b in barcodes]
+        snaps = await self._client.get_all(refs)
+        out: dict[str, Food] = {}
+        for snap in snaps:
+            if snap.exists:
+                out[snap.id] = _doc_to_food(snap.to_dict() or {})
+        return out
 
     async def upsert(self, food: Food) -> None:
         """Create or refresh the doc; preserves cached_at on existing rows."""
@@ -80,3 +97,25 @@ class FoodRepository:
 def _doc_to_food(data: dict) -> Food:
     cleaned = {k: v for k, v in data.items() if k not in _INTERNAL_FIELDS}
     return Food.model_validate(cleaned)
+
+
+async def resolve_food(
+    barcode: str,
+    repo: FoodRepository,
+    off: OffClient,
+) -> Food | None:
+    """Cache → OFF → upsert. Returns None if neither has the barcode.
+
+    Shared between `GET /foods/{barcode}` and the journal `POST item` flow,
+    where adding an item to a day must validate the barcode and prime the
+    cache. Raises `OffUnavailable` on transport errors so the caller decides
+    whether to surface 502 or degrade.
+    """
+    cached = await repo.get_by_barcode(barcode)
+    if cached is not None:
+        return cached
+    product = await off.get_product(barcode)
+    if product is None:
+        return None
+    await repo.upsert(product)
+    return product

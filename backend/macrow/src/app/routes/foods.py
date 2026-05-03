@@ -19,7 +19,7 @@ from ..config.constants import (
     OFF_SEARCH_PAGE_SIZE,
 )
 from ..models.food import Food, FoodSearchResponse, SourceBreakdown
-from ..services.food import FoodRepository
+from ..services.food import FoodRepository, resolve_food
 from ..services.off import OffClient
 from ..utils.error import OffUnavailable, barcode_not_found, off_unavailable
 
@@ -118,17 +118,10 @@ async def get_food_by_barcode(
     off: OffClient = Depends(get_off),
     repo: FoodRepository = Depends(get_repo),
 ) -> Food | JSONResponse:
-    cached = await repo.get_by_barcode(barcode)
-    if cached is not None:
-        return cached
-
     try:
-        product = await off.get_product(barcode)
+        product = await resolve_food(barcode, repo, off)
     except OffUnavailable:
         return off_unavailable()
-
     if product is None:
         return barcode_not_found(barcode)
-
-    await repo.upsert(product)
     return product
