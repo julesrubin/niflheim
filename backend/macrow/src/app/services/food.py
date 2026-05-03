@@ -53,9 +53,8 @@ class FoodRepository:
         if not barcodes:
             return {}
         refs = [self._foods.document(b) for b in barcodes]
-        snaps = await self._client.get_all(refs)
         out: dict[str, Food] = {}
-        for snap in snaps:
+        async for snap in self._client.get_all(refs):
             if snap.exists:
                 out[snap.id] = _doc_to_food(snap.to_dict() or {})
         return out
