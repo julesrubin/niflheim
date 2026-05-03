@@ -1,31 +1,34 @@
-from datetime import datetime
-
 from .common import CamelModel, NutriScore, ServingUnit
 
 
 class Food(CamelModel):
+    """An Open Food Facts product, keyed by barcode.
+
+    All macro values (calories, protein, carbs, fat, fiber, sugar, salt) are
+    expressed per 100 of `base_unit` — per 100 g for solids, per 100 ml for
+    liquids. Clients compute per-serving values as `value * serving_size / 100`
+    when `serving_size` is set.
+    """
+
     barcode: str
 
     name: str
     brand: str
 
     base_unit: ServingUnit
-    calories_per_100: float
-    protein_per_100: float
-    carbs_per_100: float
-    fat_per_100: float
-    fiber_per_100: float | None = None
-    sugar_per_100: float | None = None
-    salt_per_100: float | None = None
+    calories: float
+    protein: float
+    carbs: float
+    fat: float
+    fiber: float | None = None
+    sugar: float | None = None
+    salt: float | None = None
 
     serving_size: float | None = None
 
     nutri_score: NutriScore | None = None
     origin: str | None = None
     image_url: str | None = None
-
-    cached_at: datetime
-    refreshed_at: datetime
 
 
 class SourceBreakdown(CamelModel):
