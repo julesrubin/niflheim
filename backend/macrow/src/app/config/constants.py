@@ -16,3 +16,9 @@ OFF_SEARCH_PAGE_SIZE = 50
 
 # Firestore collection that holds the cached OFF products.
 FIRESTORE_FOODS_COLLECTION = "foods"
+
+# Firestore collection that holds one doc per day of the journal.
+FIRESTORE_JOURNAL_COLLECTION = "journal"
+
+# Fixed meal slots; every journal day carries these four in this order.
+MEAL_KINDS = ("breakfast", "lunch", "dinner", "snack")
