@@ -5,13 +5,11 @@
 # by ~3 orders of magnitude. Document model fits the OFF cache and
 # journal data without joins. See claudedocs / discussions for the
 # tradeoffs against Cloud SQL, Spanner, etc.
-
-resource "google_project_service" "firestore" {
-  project = var.project_id
-  service = "firestore.googleapis.com"
-
-  disable_on_destroy = false
-}
+#
+# Note: firestore.googleapis.com is enabled out-of-band (`gcloud services
+# enable`), matching the rest of this repo's API-management pattern. The
+# Cloud Build SA does not hold roles/serviceusage.serviceUsageAdmin, so a
+# `google_project_service` resource here would fail at apply.
 
 # Named database (not "(default)") so each service on this project
 # can own its own Firestore namespace independently.
@@ -29,6 +27,4 @@ resource "google_firestore_database" "macrow" {
   # database in place. Safer for a personal project; recover via
   # `terraform import` if ever needed.
   deletion_policy = "ABANDON"
-
-  depends_on = [google_project_service.firestore]
 }
