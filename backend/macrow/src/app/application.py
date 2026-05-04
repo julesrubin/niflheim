@@ -1,5 +1,6 @@
 """FastAPI application factory."""
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -54,11 +55,22 @@ async def lifespan(app: FastAPI):
     try:
         yield
     finally:
-        await app.state.off_client.aclose()
-        app.state.food_repo.close()
-        app.state.journal_repo.close()
-        app.state.user_repo.close()
-        app.state.recipe_repo.close()
+        # Each close is independent; one failure must not skip the others or
+        # we leak gRPC channels (and on local dev / pytest, hang the runner).
+        closers = (
+            app.state.off_client.aclose,
+            app.state.food_repo.close,
+            app.state.journal_repo.close,
+            app.state.user_repo.close,
+            app.state.recipe_repo.close,
+        )
+        for closer in closers:
+            try:
+                result = closer()
+                if asyncio.iscoroutine(result):
+                    await result
+            except Exception:
+                logger.exception("Lifespan teardown error in %s", closer.__qualname__)
 
 
 def create_app() -> FastAPI:
