@@ -13,7 +13,7 @@ Search is prefix-only (Firestore has no full-text). For broader recall, the
 """
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from google.cloud import firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
@@ -61,7 +61,7 @@ class FoodRepository:
 
     async def upsert(self, food: Food) -> None:
         """Create or refresh the doc; preserves cached_at on existing rows."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         doc_ref = self._foods.document(food.barcode)
 
         existing = await doc_ref.get()

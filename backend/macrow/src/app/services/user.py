@@ -7,7 +7,7 @@ later is a route-only change.
 """
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from google.api_core.exceptions import AlreadyExists
 from google.cloud import firestore
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 def _seed_doc() -> dict:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     seed = User().model_dump(by_alias=False)
     seed["created_at"] = now
     seed["updated_at"] = now
@@ -68,7 +68,7 @@ class UserRepository:
             # doc); fall back to a fresh seed in that case.
             doc = (snap.to_dict() or _seed_doc()) if snap.exists else _seed_doc()
             doc.update(updates)
-            doc["updated_at"] = datetime.now(timezone.utc)
+            doc["updated_at"] = datetime.now(UTC)
             transaction.set(doc_ref, doc)
             result = doc
 

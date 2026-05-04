@@ -11,7 +11,7 @@ can't lose updates.
 
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import NotRequired, TypedDict
 
 from google.api_core.exceptions import AlreadyExists
@@ -54,7 +54,7 @@ def _empty_meals() -> dict[str, StoredMeal]:
 
 
 def _empty_day(date: str) -> StoredDay:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return {
         "date": date,
         "meals": _empty_meals(),
@@ -137,7 +137,7 @@ class JournalRepository:
                 else _empty_day(date)
             )
             doc["meals"].setdefault(kind.value, {"items": []})["items"].append(item)
-            doc["updated_at"] = datetime.now(timezone.utc)
+            doc["updated_at"] = datetime.now(UTC)
             transaction.set(doc_ref, doc)
 
         await _tx(self._client.transaction())
@@ -162,7 +162,7 @@ class JournalRepository:
             updated = _apply_patch(doc, item_id, patch)
             if updated is None:
                 raise JournalItemNotFound(item_id)
-            doc["updated_at"] = datetime.now(timezone.utc)
+            doc["updated_at"] = datetime.now(UTC)
             transaction.set(doc_ref, doc)
             result = updated
 
@@ -185,7 +185,7 @@ class JournalRepository:
             removed = _pop_items(doc, ids)
             if not removed:
                 return
-            doc["updated_at"] = datetime.now(timezone.utc)
+            doc["updated_at"] = datetime.now(UTC)
             transaction.set(doc_ref, doc)
 
         await _tx(self._client.transaction())
@@ -220,7 +220,7 @@ class JournalRepository:
                 if not moved:
                     return
                 _append_items(doc, to_kind.value, moved)
-                doc["updated_at"] = datetime.now(timezone.utc)
+                doc["updated_at"] = datetime.now(UTC)
                 transaction.set(doc_ref, doc)
 
             await _tx_same(self._client.transaction())
@@ -245,7 +245,7 @@ class JournalRepository:
             if not moved:
                 return
             _append_items(dst_doc, to_kind.value, moved)
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             src_doc["updated_at"] = now
             dst_doc["updated_at"] = now
             transaction.set(src_ref, src_doc)
