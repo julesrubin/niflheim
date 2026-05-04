@@ -12,7 +12,7 @@ to whichever cache the item points at.
 
 import asyncio
 import logging
-from datetime import datetime
+from datetime import date
 
 from fastapi import APIRouter, Depends, Request, Response
 from fastapi.responses import JSONResponse
@@ -252,11 +252,13 @@ async def move_journal_items(
 
 
 def _is_valid_date(value: str) -> bool:
+    """Accept only YYYY-MM-DD. date.fromisoformat() in 3.11+ also accepts the
+    compact form 'YYYYMMDD'; round-tripping through .isoformat() rules that out
+    so storage doc-ids stay consistent."""
     try:
-        datetime.strptime(value, "%Y-%m-%d")
+        return date.fromisoformat(value).isoformat() == value
     except ValueError:
         return False
-    return True
 
 
 def _to_meal_kind(value: str) -> MealKind | None:
