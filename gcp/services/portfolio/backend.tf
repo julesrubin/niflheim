@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 0.15" # Specify the minimum Terraform version
+  required_version = ">= 1.8.0" # Specify the minimum Terraform version
   required_providers {
     google = {
       source  = "hashicorp/google"
