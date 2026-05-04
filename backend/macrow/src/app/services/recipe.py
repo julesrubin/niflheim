@@ -135,7 +135,10 @@ class RecipeRepository:
             result = _doc_to_recipe(doc)
 
         await _tx(self._client.transaction())
-        assert result is not None
+        if result is None:
+            # Should be unreachable: the transaction body either sets `result`
+            # or raises RecipeNotFound which would propagate above.
+            raise RuntimeError("transaction returned without setting result")
         return result
 
     async def delete(self, recipe_id: str) -> None:
