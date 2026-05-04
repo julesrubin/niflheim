@@ -25,3 +25,6 @@ MEAL_KINDS = ("breakfast", "lunch", "dinner", "snack")
 
 # Firestore collection that holds one doc per user (single-user for now → "me").
 FIRESTORE_USERS_COLLECTION = "users"
+
+# Firestore collection that holds user-authored recipes (one doc per recipe id).
+FIRESTORE_RECIPES_COLLECTION = "recipes"
