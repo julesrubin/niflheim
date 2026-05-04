@@ -13,6 +13,10 @@ class JournalItemNotFound(Exception):
     """Raised by services.journal when a logged-food item can't be located in any meal."""
 
 
+class RecipeNotFound(Exception):
+    """Raised by services.recipe when a recipe id doesn't resolve."""
+
+
 def error_response(
     status_code: int,
     code: str,
@@ -73,4 +77,13 @@ def journal_item_not_found(item_id: str) -> JSONResponse:
         "JOURNAL_ITEM_NOT_FOUND",
         f"No logged-food item with id {item_id!r} on this day.",
         {"itemId": item_id},
+    )
+
+
+def recipe_not_found(recipe_id: str) -> JSONResponse:
+    return error_response(
+        404,
+        "RECIPE_NOT_FOUND",
+        f"No recipe with id {recipe_id!r}.",
+        {"recipeId": recipe_id},
     )
