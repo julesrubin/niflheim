@@ -8,6 +8,16 @@ locals {
 }
 
 locals {
+  # Skip builds when only docs / smoke scripts / tests changed — those don't
+  # produce a new image or terraform diff so a rebuild + redeploy is wasted
+  # work.
+  doc_only_ignores = [
+    "**/*.md",
+    "**/CLAUDE.md",
+    "**/scripts/**",
+    "**/tests/**",
+  ]
+
   applications = {
     core = {
       included_files = ["gcp/**"]
@@ -19,7 +29,7 @@ locals {
     },
     proxy = {
       included_files = ["gcp/services/proxy/**", "backend/proxy/**"]
-      ignored_files  = []
+      ignored_files  = local.doc_only_ignores
       substitutions = {
         _SUBFOLDER      = "gcp/services/proxy"
         _DOCKER_FOLDERS = "backend/proxy"
@@ -27,7 +37,7 @@ locals {
     },
     portfolio = {
       included_files = ["gcp/services/portfolio/**", "frontend/portfolio/**"]
-      ignored_files  = []
+      ignored_files  = local.doc_only_ignores
       substitutions = {
         _SUBFOLDER      = "gcp/services/portfolio"
         _DOCKER_FOLDERS = "frontend/portfolio"
@@ -35,7 +45,7 @@ locals {
     },
     api = {
       included_files = ["gcp/services/api/**", "backend/api/**"]
-      ignored_files  = []
+      ignored_files  = local.doc_only_ignores
       substitutions = {
         _SUBFOLDER      = "gcp/services/api"
         _DOCKER_FOLDERS = "backend/api"
@@ -43,7 +53,7 @@ locals {
     },
     macrow = {
       included_files = ["gcp/services/macrow/**", "backend/macrow/**"]
-      ignored_files  = []
+      ignored_files  = local.doc_only_ignores
       substitutions = {
         _SUBFOLDER      = "gcp/services/macrow"
         _DOCKER_FOLDERS = "backend/macrow"
