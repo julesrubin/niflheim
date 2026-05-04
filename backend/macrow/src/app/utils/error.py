@@ -46,10 +46,6 @@ def error_response(
     )
 
 
-def not_implemented(message: str = "Not yet implemented.") -> JSONResponse:
-    return error_response(501, "NOT_IMPLEMENTED", message)
-
-
 def barcode_not_found(barcode: str) -> JSONResponse:
     return error_response(
         404,
