@@ -33,7 +33,7 @@ from ..models.recipe import Recipe
 from ..services.food import FoodRepository, resolve_food
 from ..services.journal import JournalRepository
 from ..services.off import OffClient
-from ..services.recipe import RecipeRepository
+from ..services.recipe import RecipeRepository, compute_macros
 from ..utils.error import (
     JournalItemNotFound,
     OffUnavailable,
@@ -118,6 +118,7 @@ async def add_journal_recipe(
     body: LoggedRecipeCreate,
     journal: JournalRepository = Depends(get_journal_repo),
     recipes: RecipeRepository = Depends(get_recipe_repo),
+    foods: FoodRepository = Depends(get_food_repo),
 ) -> LoggedFood | JSONResponse:
     if not _is_valid_date(date):
         return invalid_date(date)
@@ -128,6 +129,8 @@ async def add_journal_recipe(
     recipe = await recipes.get(body.recipe_id)
     if recipe is None:
         return recipe_not_found(body.recipe_id)
+    food_map = await foods.get_many([i.barcode for i in recipe.ingredients])
+    recipe = compute_macros(recipe, food_map)
 
     item = await journal.add_recipe_item(
         date=date,
@@ -163,6 +166,8 @@ async def patch_journal_item(
                 item["recipe_id"],
             )
             return recipe_not_found(item["recipe_id"])
+        ingredient_foods = await foods.get_many([i.barcode for i in recipe.ingredients])
+        recipe = compute_macros(recipe, ingredient_foods)
         return _to_logged_food(item, recipe=recipe)
 
     barcode = item.get("barcode")
@@ -244,7 +249,9 @@ async def _load_refs(
     recipe_repo: RecipeRepository,
     doc: dict,
 ) -> tuple[dict[str, Food], dict[str, Recipe]]:
-    """Collect unique barcodes and recipe ids across all meals; batch-read both."""
+    """Collect refs across all meals, batch-read both, then decorate recipes
+    with computed per-serving macros (which needs a second pass over any
+    ingredient foods not already loaded for direct food-backed items)."""
     meals = doc.get("meals") or {}
     barcodes: set[str] = set()
     recipe_ids: set[str] = set()
@@ -258,7 +265,18 @@ async def _load_refs(
         food_repo.get_many(list(barcodes)),
         recipe_repo.get_many(list(recipe_ids)),
     )
-    return foods, recipes
+
+    # Recipes need their ingredient foods to compute macros — fetch the
+    # delta against what we already loaded for direct food-backed items.
+    ingredient_barcodes = {
+        ing.barcode for r in recipes.values() for ing in r.ingredients
+    }
+    missing = list(ingredient_barcodes - foods.keys())
+    if missing:
+        foods = {**foods, **(await food_repo.get_many(missing))}
+
+    decorated_recipes = {rid: compute_macros(r, foods) for rid, r in recipes.items()}
+    return foods, decorated_recipes
 
 
 def _shape_day(

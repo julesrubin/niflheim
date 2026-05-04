@@ -1,12 +1,15 @@
 """Recipe DTOs.
 
-Recipes are user-authored multi-ingredient compositions. iOS today carries only
-`caloriesPerServing` (no protein/carbs/fat breakdown); the model leaves room for
-those when iOS gains them.
+Recipes are user-authored multi-ingredient compositions. Ingredients reference
+the foods cache by barcode + quantity (in the food's base unit — g for solids,
+ml for liquids). Custom (no-barcode) ingredients are deferred, matching the
+`/journal` constraint.
 
-Ingredients reference the foods cache by barcode + quantity (in the food's base
-unit — g for solids, ml for liquids). Custom (no-barcode) ingredients are
-deferred, matching the `/journal` constraint.
+Per-serving macros (calories, protein, carbs, fat) are NOT stored — they're
+server-derived on read by joining ingredients to the foods cache and dividing
+by servings. Food is the single source of truth; a recipe inherits whatever
+macros the cache currently reports for its ingredients, so updates propagate
+automatically and the recipe doc can never drift.
 """
 
 from pydantic import Field
@@ -27,9 +30,21 @@ class Recipe(CamelModel):
     difficulty: str = "Facile"
     emoji: str = ""
     thumb_bg: str = ""
-    ingredients: list[RecipeIngredient] = []
+    ingredients: list[RecipeIngredient] = Field(default_factory=list)
     cooked: bool = False
-    calories_per_serving: int = Field(default=0, ge=0)
+
+    # Server-computed from ingredients × Food.macro / 100, divided by servings.
+    # Defaults are placeholders — the route layer overwrites these via
+    # services.recipe.compute_macros after the recipe is fetched.
+    calories_per_serving: int = 0
+    protein_per_serving: float = 0.0
+    carbs_per_serving: float = 0.0
+    fat_per_serving: float = 0.0
+
+    # False when one or more ingredient barcodes are missing from the foods
+    # cache; the macros above exclude that ingredient's contribution. Lets the
+    # client render "approx" or warn the user to scan the missing ingredient.
+    nutrition_complete: bool = True
 
 
 class RecipeCreate(CamelModel):
@@ -39,9 +54,8 @@ class RecipeCreate(CamelModel):
     difficulty: str = "Facile"
     emoji: str = ""
     thumb_bg: str = ""
-    ingredients: list[RecipeIngredient] = []
+    ingredients: list[RecipeIngredient] = Field(default_factory=list)
     cooked: bool = False
-    calories_per_serving: int = Field(default=0, ge=0)
 
 
 class RecipePatch(CamelModel):
@@ -53,4 +67,3 @@ class RecipePatch(CamelModel):
     thumb_bg: str | None = None
     ingredients: list[RecipeIngredient] | None = None
     cooked: bool | None = None
-    calories_per_serving: int | None = Field(default=None, ge=0)

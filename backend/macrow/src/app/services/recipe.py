@@ -4,6 +4,10 @@ One doc per recipe, keyed by server-generated UUID. Recipes are user-mutable;
 historical journal entries that reference a deleted recipe surface the
 missing-ref via the `routes/journal._shape_day` warn-and-drop path, matching
 the existing food-eviction handling.
+
+Per-serving macros are NOT stored — `compute_macros()` derives them on read by
+joining ingredients to the foods cache. See `models/recipe.Recipe` for the
+contract.
 """
 
 import logging
@@ -13,6 +17,7 @@ from datetime import datetime, timezone
 from google.cloud import firestore
 
 from ..config.constants import FIRESTORE_RECIPES_COLLECTION
+from ..models.food import Food
 from ..models.recipe import Recipe, RecipeCreate, RecipePatch
 from ..utils.error import RecipeNotFound
 
@@ -24,6 +29,48 @@ _INTERNAL_FIELDS = frozenset({"created_at", "updated_at"})
 def _doc_to_recipe(data: dict) -> Recipe:
     cleaned = {k: v for k, v in data.items() if k not in _INTERNAL_FIELDS}
     return Recipe.model_validate(cleaned)
+
+
+def compute_macros(recipe: Recipe, foods: dict[str, Food]) -> Recipe:
+    """Return a copy of `recipe` with per-serving macros computed.
+
+    Sums ingredient.quantity × food.macro / 100 across ingredients and divides
+    by servings. Ingredients whose barcode is missing from the cache are
+    skipped with a warning; nutrition_complete is False so the client knows
+    the totals are partial.
+    """
+    if not recipe.ingredients:
+        return recipe.model_copy(update={"nutrition_complete": True})
+
+    cals = prot = carb = fat_ = 0.0
+    complete = True
+    for ing in recipe.ingredients:
+        food = foods.get(ing.barcode)
+        if food is None:
+            logger.warning(
+                "Recipe %s ingredient %s missing from cache; macros partial",
+                recipe.id,
+                ing.barcode,
+            )
+            complete = False
+            continue
+        # food.* are per 100 units of food.base_unit; quantity is in the same.
+        factor = ing.quantity / 100
+        cals += food.calories * factor
+        prot += food.protein * factor
+        carb += food.carbs * factor
+        fat_ += food.fat * factor
+
+    servings = recipe.servings
+    return recipe.model_copy(
+        update={
+            "calories_per_serving": int(round(cals / servings)),
+            "protein_per_serving": round(prot / servings, 1),
+            "carbs_per_serving": round(carb / servings, 1),
+            "fat_per_serving": round(fat_ / servings, 1),
+            "nutrition_complete": complete,
+        }
+    )
 
 
 class RecipeRepository:
