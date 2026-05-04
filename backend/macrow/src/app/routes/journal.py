@@ -264,6 +264,11 @@ def _is_valid_date(value: str) -> bool:
 
 
 def _to_meal_kind(value: str) -> MealKind | None:
+    """Path-level meal-kind validation done in the handler, not the route
+    signature. Declaring `kind: MealKind` would let FastAPI auto-validate, but
+    its 422 envelope diverges from the project's standard {error: {code, ...}}
+    shape — keeping validation in the handler lets every 4xx use the same
+    envelope via invalid_meal_kind()."""
     try:
         return MealKind(value)
     except ValueError:
