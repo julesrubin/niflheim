@@ -57,7 +57,9 @@ class UserRepository:
         async def _tx(transaction):
             nonlocal result
             snap = await doc_ref.get(transaction=transaction)
-            doc = snap.to_dict() if snap.exists else _seed_doc()
+            # snap.to_dict() can be None even when snap.exists is True (empty
+            # doc); fall back to a fresh seed in that case.
+            doc = (snap.to_dict() or _seed_doc()) if snap.exists else _seed_doc()
             doc.update(updates)
             doc["updated_at"] = datetime.now(timezone.utc)
             transaction.set(doc_ref, doc)

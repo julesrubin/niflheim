@@ -98,7 +98,11 @@ class JournalRepository:
         @firestore.async_transactional
         async def _tx(transaction):
             snap = await doc_ref.get(transaction=transaction)
-            doc = snap.to_dict() if snap.exists else _empty_day(date)
+            doc = (
+                (snap.to_dict() or _empty_day(date))
+                if snap.exists
+                else _empty_day(date)
+            )
             doc["meals"].setdefault(kind.value, {"items": []})["items"].append(item)
             doc["updated_at"] = datetime.now(timezone.utc)
             transaction.set(doc_ref, doc)
@@ -199,7 +203,11 @@ class JournalRepository:
             if not src_snap.exists:
                 return
             src_doc = src_snap.to_dict() or {}
-            dst_doc = dst_snap.to_dict() if dst_snap.exists else _empty_day(target_date)
+            dst_doc = (
+                (dst_snap.to_dict() or _empty_day(target_date))
+                if dst_snap.exists
+                else _empty_day(target_date)
+            )
             moved = _pop_items(src_doc, ids)
             if not moved:
                 return
