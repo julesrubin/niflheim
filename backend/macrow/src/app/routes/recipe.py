@@ -8,25 +8,18 @@ already carries the freshly-computed totals.
 
 import logging
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, Response
 from fastapi.responses import JSONResponse
 
 from ..models.recipe import Recipe, RecipeCreate, RecipePatch
 from ..services.food import FoodRepository
 from ..services.recipe import RecipeRepository, compute_macros
 from ..utils.error import ERR_404, RecipeNotFound, recipe_not_found
+from .deps import get_food_repo, get_recipe_repo
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
-
-
-def get_recipe_repo(request: Request) -> RecipeRepository:
-    return request.app.state.recipe_repo
-
-
-def get_food_repo(request: Request) -> FoodRepository:
-    return request.app.state.food_repo
 
 
 async def _decorate(recipe: Recipe, foods: FoodRepository) -> Recipe:
