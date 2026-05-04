@@ -35,6 +35,9 @@ from ..services.journal import JournalRepository
 from ..services.off import OffClient
 from ..services.recipe import RecipeRepository, compute_macros
 from ..utils.error import (
+    ERR_400,
+    ERR_404,
+    ERR_502,
     JournalItemNotFound,
     OffUnavailable,
     barcode_not_found,
@@ -66,7 +69,7 @@ def get_recipe_repo(request: Request) -> RecipeRepository:
     return request.app.state.recipe_repo
 
 
-@router.get("/days/{date}", response_model=DailyJournal)
+@router.get("/days/{date}", response_model=DailyJournal, responses={**ERR_400})
 async def get_journal_day(
     date: str,
     journal: JournalRepository = Depends(get_journal_repo),
@@ -80,7 +83,11 @@ async def get_journal_day(
     return _shape_day(doc, food_map, recipe_map)
 
 
-@router.post("/days/{date}/meals/{kind}/items", response_model=LoggedFood)
+@router.post(
+    "/days/{date}/meals/{kind}/items",
+    response_model=LoggedFood,
+    responses={**ERR_400, **ERR_404, **ERR_502},
+)
 async def add_journal_item(
     date: str,
     kind: str,
@@ -111,7 +118,11 @@ async def add_journal_item(
     return _to_logged_food(item, food=food)
 
 
-@router.post("/days/{date}/meals/{kind}/recipes", response_model=LoggedFood)
+@router.post(
+    "/days/{date}/meals/{kind}/recipes",
+    response_model=LoggedFood,
+    responses={**ERR_400, **ERR_404},
+)
 async def add_journal_recipe(
     date: str,
     kind: str,
@@ -141,7 +152,11 @@ async def add_journal_recipe(
     return _to_logged_food(item, recipe=recipe)
 
 
-@router.patch("/days/{date}/items/{item_id}", response_model=LoggedFood)
+@router.patch(
+    "/days/{date}/items/{item_id}",
+    response_model=LoggedFood,
+    responses={**ERR_400, **ERR_404},
+)
 async def patch_journal_item(
     date: str,
     item_id: str,
@@ -186,7 +201,9 @@ async def patch_journal_item(
     return _to_logged_food(item, food=food)
 
 
-@router.delete("/days/{date}/items/{item_id}", response_model=None)
+@router.delete(
+    "/days/{date}/items/{item_id}", response_model=None, responses={**ERR_400}
+)
 async def delete_journal_item(
     date: str,
     item_id: str,
@@ -198,7 +215,9 @@ async def delete_journal_item(
     return Response(status_code=204)
 
 
-@router.post("/days/{date}/items:bulk-delete", response_model=None)
+@router.post(
+    "/days/{date}/items:bulk-delete", response_model=None, responses={**ERR_400}
+)
 async def bulk_delete_journal_items(
     date: str,
     body: BulkDeleteRequest,
@@ -210,7 +229,7 @@ async def bulk_delete_journal_items(
     return Response(status_code=204)
 
 
-@router.post("/days/{date}/items:move", response_model=None)
+@router.post("/days/{date}/items:move", response_model=None, responses={**ERR_400})
 async def move_journal_items(
     date: str,
     body: MoveItemsRequest,
