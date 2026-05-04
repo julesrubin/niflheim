@@ -12,8 +12,8 @@ class Food(CamelModel):
 
     barcode: str
 
-    name: str
-    brand: str
+    name: str | None = None
+    brand: str | None = None
 
     base_unit: ServingUnit
     calories: float
