@@ -184,9 +184,9 @@ def _parse_off_product(p: dict) -> Food | None:
     except (KeyError, TypeError, ValueError):
         return None
 
-    name = p.get("product_name_fr") or p.get("product_name") or "Unknown"
+    name = p.get("product_name_fr") or p.get("product_name") or None
     brands = (p.get("brands") or "").strip()
-    brand = brands.split(",")[0].strip() if brands else "Unknown"
+    brand = brands.split(",")[0].strip() if brands else None
 
     unit_raw = (p.get("product_quantity_unit") or "g").lower()
     base_unit = ServingUnit.ml if unit_raw in ("ml", "l") else ServingUnit.g

@@ -72,7 +72,9 @@ class FoodRepository:
         )
 
         payload = food.model_dump(by_alias=False)
-        payload["name_lower"] = food.name.lower()
+        # name_lower powers the prefix-range search; an empty string keeps the
+        # row present in the index without matching any "starts with q" query.
+        payload["name_lower"] = (food.name or "").lower()
         payload["cached_at"] = cached_at
         payload["refreshed_at"] = now
 
