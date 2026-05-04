@@ -19,7 +19,7 @@
 resource "google_firestore_database" "macrow" {
   project     = var.project_id
   name        = "macrow"
-  location_id = var.region
+  location_id = var.firestore_location != "" ? var.firestore_location : var.region
   type        = "FIRESTORE_NATIVE"
 
   # Default-on; explicit so the choice is auditable. ABANDON means
