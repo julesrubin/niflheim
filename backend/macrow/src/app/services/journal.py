@@ -13,6 +13,7 @@ import logging
 import uuid
 from datetime import datetime, timezone
 
+from google.api_core.exceptions import AlreadyExists
 from google.cloud import firestore
 
 from ..config.constants import FIRESTORE_JOURNAL_COLLECTION, MEAL_KINDS
@@ -48,8 +49,14 @@ class JournalRepository:
         if snap.exists:
             return snap.to_dict() or _empty_day(date)
         new_doc = _empty_day(date)
-        await doc_ref.set(new_doc)
-        return new_doc
+        try:
+            # create() 409s on race instead of clobbering — a concurrent
+            # caller that just seeded the doc keeps their writes.
+            await doc_ref.create(new_doc)
+            return new_doc
+        except AlreadyExists:
+            snap = await doc_ref.get()
+            return snap.to_dict() or _empty_day(date)
 
     async def add_item(
         self,
