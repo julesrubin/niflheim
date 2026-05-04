@@ -45,11 +45,9 @@ class FoodRepository:
         return _doc_to_food(snap.to_dict() or {})
 
     async def get_many(self, barcodes: list[str]) -> dict[str, Food]:
-        """Batched read by barcode. Returns {barcode: Food} for hits; misses omitted.
-
-        Lets callers (e.g. the journal route) embed Food into a list of items
-        in a single round-trip rather than N sequential reads.
-        """
+        """Batched so the journal route can embed Food across N items in one
+        round-trip instead of N sequential reads. Misses are omitted from the
+        result (callers warn-and-drop)."""
         if not barcodes:
             return {}
         refs = [self._foods.document(b) for b in barcodes]
