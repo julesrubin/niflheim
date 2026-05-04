@@ -1,8 +1,14 @@
 from fastapi import APIRouter
 
+from ..models.common import CamelModel
+
 router = APIRouter(tags=["health"])
 
 
-@router.get("/health")
-async def health() -> dict[str, str]:
-    return {"status": "ok"}
+class HealthResponse(CamelModel):
+    status: str
+
+
+@router.get("/health", response_model=HealthResponse)
+async def health() -> HealthResponse:
+    return HealthResponse(status="ok")
