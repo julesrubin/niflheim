@@ -9,6 +9,7 @@ later is a route-only change.
 import logging
 from datetime import datetime, timezone
 
+from google.api_core.exceptions import AlreadyExists
 from google.cloud import firestore
 
 from ..config.constants import FIRESTORE_USERS_COLLECTION
@@ -35,9 +36,15 @@ class UserRepository:
         snap = await doc_ref.get()
         if snap.exists:
             return snap.to_dict() or _seed_doc()
-        doc = _seed_doc()
-        await doc_ref.set(doc)
-        return doc
+        new_doc = _seed_doc()
+        try:
+            # create() 409s on race instead of clobbering — a concurrent caller
+            # that just seeded the doc keeps their writes.
+            await doc_ref.create(new_doc)
+            return new_doc
+        except AlreadyExists:
+            snap = await doc_ref.get()
+            return snap.to_dict() or _seed_doc()
 
     async def patch(self, user_id: str, patch: UserPatch) -> dict:
         """Apply non-None patch fields. Lazy-creates the doc if missing."""
