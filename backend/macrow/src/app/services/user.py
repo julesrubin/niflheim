@@ -41,7 +41,12 @@ class UserRepository:
 
     async def patch(self, user_id: str, patch: UserPatch) -> dict:
         """Apply non-None patch fields. Lazy-creates the doc if missing."""
-        updates = patch.model_dump(exclude_unset=True, by_alias=False)
+        # exclude_none=True: explicit `null` from a client means "leave alone",
+        # never "write None into a non-Optional storage field". Clear-to-default
+        # is not a PATCH semantic on this surface.
+        updates = patch.model_dump(
+            exclude_unset=True, exclude_none=True, by_alias=False
+        )
         if not updates:
             return await self.get_or_create(user_id)
 
