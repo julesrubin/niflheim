@@ -13,9 +13,11 @@ This is a FastAPI-based backend API service for the Niflheim project. The API is
 # Install dependencies (uv is the package manager)
 uv sync --active
 
-# Add a new dependency
+# Add or remove deps — uv updates pyproject.toml + uv.lock for you. Never
+# edit pyproject.toml [project.dependencies] by hand; the lockfile would
+# drift and CI builds would silently install something different.
 uv add <package-name>
-# Then update pyproject.toml [project.dependencies] manually
+uv remove <package-name>
 ```
 
 ### Running the Application
