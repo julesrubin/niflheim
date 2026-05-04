@@ -157,6 +157,8 @@ async def patch_journal_item(
     except JournalItemNotFound:
         return journal_item_not_found(item_id)
 
+    # The storage write already succeeded — never 404 after that. Missing refs
+    # surface as null on the embed, matching _shape_day's warn-drop tolerance.
     if item.get("recipe_id"):
         recipe = await recipes.get(item["recipe_id"])
         if recipe is None:
@@ -165,9 +167,11 @@ async def patch_journal_item(
                 item_id,
                 item["recipe_id"],
             )
-            return recipe_not_found(item["recipe_id"])
-        ingredient_foods = await foods.get_many([i.barcode for i in recipe.ingredients])
-        recipe = compute_macros(recipe, ingredient_foods)
+        else:
+            ingredient_foods = await foods.get_many(
+                [i.barcode for i in recipe.ingredients]
+            )
+            recipe = compute_macros(recipe, ingredient_foods)
         return _to_logged_food(item, recipe=recipe)
 
     barcode = item.get("barcode")
@@ -179,7 +183,6 @@ async def patch_journal_item(
     food = food_map.get(barcode)
     if food is None:
         logger.warning("Patched item %s references missing food %s", item_id, barcode)
-        return barcode_not_found(barcode)
     return _to_logged_food(item, food=food)
 
 
