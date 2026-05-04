@@ -260,7 +260,7 @@ class JournalRepository:
 def _apply_patch(doc: dict, item_id: str, patch: LoggedFoodPatch) -> dict | None:
     """Find item by id across all meals and apply non-None patch fields in place."""
     for kind in MealKind:
-        meal = doc["meals"].setdefault(kind.value, {"items": []})
+        meal = doc["meals"].get(kind.value) or {"items": []}
         for item in meal["items"]:
             if item["id"] == item_id:
                 if patch.checked is not None:
@@ -275,7 +275,9 @@ def _pop_items(doc: dict, ids: set[str]) -> list[dict]:
     """Remove items whose ids match from all meals; return them in iteration order."""
     popped: list[dict] = []
     for kind in MealKind:
-        meal = doc["meals"].setdefault(kind.value, {"items": []})
+        meal = doc["meals"].get(kind.value)
+        if meal is None:
+            continue
         kept: list[dict] = []
         for item in meal["items"]:
             if item["id"] in ids:
