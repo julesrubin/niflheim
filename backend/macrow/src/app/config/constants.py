@@ -20,9 +20,6 @@ FIRESTORE_FOODS_COLLECTION = "foods"
 # Firestore collection that holds one doc per day of the journal.
 FIRESTORE_JOURNAL_COLLECTION = "journal"
 
-# Fixed meal slots; every journal day carries these four in this order.
-MEAL_KINDS = ("breakfast", "lunch", "dinner", "snack")
-
 # Firestore collection that holds one doc per user (single-user for now → "me").
 FIRESTORE_USERS_COLLECTION = "users"
 

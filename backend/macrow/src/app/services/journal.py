@@ -17,7 +17,7 @@ from typing import NotRequired, TypedDict
 from google.api_core.exceptions import AlreadyExists
 from google.cloud import firestore
 
-from ..config.constants import FIRESTORE_JOURNAL_COLLECTION, MEAL_KINDS
+from ..config.constants import FIRESTORE_JOURNAL_COLLECTION
 from ..models.journal import LoggedFoodPatch, MealKind
 from ..utils.error import JournalItemNotFound
 
@@ -50,7 +50,7 @@ class StoredDay(TypedDict):
 
 
 def _empty_meals() -> dict[str, StoredMeal]:
-    return {kind: {"items": []} for kind in MEAL_KINDS}
+    return {kind.value: {"items": []} for kind in MealKind}
 
 
 def _empty_day(date: str) -> StoredDay:
@@ -259,8 +259,8 @@ class JournalRepository:
 
 def _apply_patch(doc: dict, item_id: str, patch: LoggedFoodPatch) -> dict | None:
     """Find item by id across all meals and apply non-None patch fields in place."""
-    for kind in MEAL_KINDS:
-        meal = doc["meals"].setdefault(kind, {"items": []})
+    for kind in MealKind:
+        meal = doc["meals"].setdefault(kind.value, {"items": []})
         for item in meal["items"]:
             if item["id"] == item_id:
                 if patch.checked is not None:
@@ -274,8 +274,8 @@ def _apply_patch(doc: dict, item_id: str, patch: LoggedFoodPatch) -> dict | None
 def _pop_items(doc: dict, ids: set[str]) -> list[dict]:
     """Remove items whose ids match from all meals; return them in iteration order."""
     popped: list[dict] = []
-    for kind in MEAL_KINDS:
-        meal = doc["meals"].setdefault(kind, {"items": []})
+    for kind in MealKind:
+        meal = doc["meals"].setdefault(kind.value, {"items": []})
         kept: list[dict] = []
         for item in meal["items"]:
             if item["id"] in ids:
