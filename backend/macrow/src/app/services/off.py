@@ -139,7 +139,7 @@ class OffClient:
 
 # ─── parsing ────────────────────────────────────────────────────────────────
 
-_SERVING_RE = re.compile(r"(\d+(?:[.,]\d+)?)")
+_SERVING_RE = re.compile(r"^\s*(\d+(?:[.,]\d+)?)")
 
 
 def _normalize_search_hit(hit: dict) -> dict:
@@ -218,10 +218,13 @@ def _optional_float(v: object) -> float | None:
 
 
 def _parse_serving_size(s: object) -> float | None:
-    """Extract the leading number from strings like '25 g' or '250ml'."""
+    """Extract the leading number from strings like '25 g' or '250ml'.
+
+    Anchored to the start so 'per 25g serving' wouldn't grab 25 from the
+    middle and report it as the serving quantity."""
     if not isinstance(s, str):
         return None
-    m = _SERVING_RE.search(s)
+    m = _SERVING_RE.match(s)
     if not m:
         return None
     return float(m.group(1).replace(",", "."))
