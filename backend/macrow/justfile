@@ -50,6 +50,24 @@ test: _check-uv
 [group('quality')]
 pre-commit: format lint test
 
+# Smoke test the API end-to-end against a running instance.
+# Defaults to local; pass a base URL to hit the deployed service:
+#   just macrow::smoke https://julesrubin.com/macrow
+[group('quality')]
+smoke base_url="http://127.0.0.1:8000/macrow":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd {{ source_directory() }}
+    export MACROW_BASE_URL="{{ base_url }}"
+    echo "Smoking $MACROW_BASE_URL ..."
+    bash scripts/health.sh
+    bash scripts/users.sh
+    bash scripts/foods.sh
+    bash scripts/recipes.sh
+    bash scripts/journal.sh
+    echo
+    echo "✓ All smoke tests passed against $MACROW_BASE_URL"
+
 # Build Docker image for GCP Cloud Run
 [group('docker')]
 image:
