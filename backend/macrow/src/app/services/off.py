@@ -16,6 +16,7 @@ throttling — single-user load is well under, and 429 / 5xx map to
 OffUnavailable so the route falls back gracefully.
 """
 
+import json
 import logging
 import re
 
@@ -74,9 +75,21 @@ class OffClient:
             logger.warning("OFF returned %s for barcode %s", r.status_code, barcode)
             raise OffUnavailable()
         if r.status_code != 200:
-            return None
+            # 4xx other than 429 means OFF rejected us (bad UA, auth, malformed
+            # request) — not the same as "product missing", which OFF signals via
+            # 200 + status:0 below.
+            logger.warning(
+                "OFF returned unexpected %s for barcode %s",
+                r.status_code,
+                barcode,
+            )
+            raise OffUnavailable()
 
-        data = r.json()
+        try:
+            data = r.json()
+        except json.JSONDecodeError as exc:
+            logger.warning("OFF product response was not JSON: %s", exc)
+            raise OffUnavailable() from exc
         if data.get("status") != 1 or "product" not in data:
             return None
         return _parse_off_product(data["product"])
@@ -102,9 +115,16 @@ class OffClient:
         if r.status_code == 429 or r.status_code >= 500:
             raise OffUnavailable()
         if r.status_code != 200:
-            return []
+            logger.warning(
+                "OFF search returned unexpected %s for q=%r", r.status_code, q
+            )
+            raise OffUnavailable()
 
-        hits = r.json().get("hits", [])
+        try:
+            hits = r.json().get("hits", [])
+        except json.JSONDecodeError as exc:
+            logger.warning("OFF search response was not JSON: %s", exc)
+            raise OffUnavailable() from exc
         out: list[Food] = []
         for hit in hits:
             food = _parse_off_product(_normalize_search_hit(hit))
