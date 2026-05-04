@@ -30,7 +30,7 @@ _INTERNAL_FIELDS = frozenset({"name_lower", "cached_at", "refreshed_at"})
 # End-of-range sentinel for Firestore prefix queries: a private-use
 # code point past every Unicode char a normal product name would contain,
 # so the half-open range [q, q + SENTINEL] is exactly "name starts with q".
-_PREFIX_SENTINEL = ""
+_PREFIX_SENTINEL = "\uf8ff"
 
 
 class FoodRepository:
