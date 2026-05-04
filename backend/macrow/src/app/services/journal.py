@@ -12,6 +12,7 @@ can't lose updates.
 import logging
 import uuid
 from datetime import datetime, timezone
+from typing import NotRequired, TypedDict
 
 from google.api_core.exceptions import AlreadyExists
 from google.cloud import firestore
@@ -23,11 +24,36 @@ from ..utils.error import JournalItemNotFound
 logger = logging.getLogger(__name__)
 
 
-def _empty_meals() -> dict[str, dict]:
+# ─── Storage shape ──────────────────────────────────────────────────────────
+# TypedDicts document the on-disk Firestore shape. They're runtime-no-ops but
+# make the boundary between service (raw dicts) and route layer (Pydantic
+# DTOs) explicit, and let static type checkers catch typos in dict access.
+
+
+class StoredItem(TypedDict):
+    id: str
+    quantity: float
+    checked: bool
+    barcode: NotRequired[str]
+    recipe_id: NotRequired[str]
+
+
+class StoredMeal(TypedDict):
+    items: list[StoredItem]
+
+
+class StoredDay(TypedDict):
+    date: str
+    meals: dict[str, StoredMeal]
+    created_at: datetime
+    updated_at: datetime
+
+
+def _empty_meals() -> dict[str, StoredMeal]:
     return {kind: {"items": []} for kind in MEAL_KINDS}
 
 
-def _empty_day(date: str) -> dict:
+def _empty_day(date: str) -> StoredDay:
     now = datetime.now(timezone.utc)
     return {
         "date": date,
@@ -42,7 +68,7 @@ class JournalRepository:
         self._client = firestore.AsyncClient(project=project, database=database)
         self._days = self._client.collection(FIRESTORE_JOURNAL_COLLECTION)
 
-    async def get_or_create(self, date: str) -> dict:
+    async def get_or_create(self, date: str) -> StoredDay:
         """Read the day; if missing, write an empty 4-meal skeleton and return it."""
         doc_ref = self._days.document(date)
         snap = await doc_ref.get()
@@ -64,7 +90,7 @@ class JournalRepository:
         kind: MealKind,
         barcode: str,
         quantity: float,
-    ) -> dict:
+    ) -> StoredItem:
         """Append a food-backed item to meals[kind].items. Lazy-creates the day.
 
         quantity is in food.base_unit (g/ml). The unit itself is never stored —
@@ -85,7 +111,7 @@ class JournalRepository:
         kind: MealKind,
         recipe_id: str,
         servings: float,
-    ) -> dict:
+    ) -> StoredItem:
         """Append a recipe-backed item to meals[kind].items. Lazy-creates the day.
 
         quantity holds the number of servings; "portion(s)" is a render concern.
@@ -121,7 +147,7 @@ class JournalRepository:
         date: str,
         item_id: str,
         patch: LoggedFoodPatch,
-    ) -> dict:
+    ) -> StoredItem:
         """Update an item by id. Raises JournalItemNotFound if absent on this day."""
         doc_ref = self._days.document(date)
         result: dict = {}
