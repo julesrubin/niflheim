@@ -1,9 +1,10 @@
 """Daily food journal DTOs.
 
-Storage is normalized: a logged item carries only `{id, barcode, quantity, unit,
-checked}`. The `food` field on `LoggedFood` is server-embedded on read by joining
-to the foods cache. Custom (no-barcode) entries and per-user goals are out of
-scope for this step.
+Storage is normalized: a logged item carries only `{id, barcode?, recipe_id?,
+quantity, unit, checked}` — exactly one of `barcode` / `recipe_id` is set. The
+`food` and `recipe` fields are server-embedded on read by joining to the foods
+cache and the recipes collection. Custom (no-barcode, no-recipe) entries and
+per-user goals are out of scope for this step.
 """
 
 from enum import StrEnum
@@ -12,6 +13,7 @@ from pydantic import Field
 
 from .common import CamelModel
 from .food import Food
+from .recipe import Recipe
 
 
 class MealKind(StrEnum):
@@ -22,15 +24,20 @@ class MealKind(StrEnum):
 
 
 class LoggedFood(CamelModel):
-    """A single eaten item. `food` is embedded on read; never persisted."""
+    """A single eaten item — either food-backed (barcode + food) or recipe-backed
+    (recipe_id + recipe). Exactly one ref is set; both are optional in the DTO so
+    the same shape carries both kinds of entries.
+    """
 
     id: str
-    barcode: str
     quantity: float
     # "g" | "ml" | "portion" | "item"; clients default to food.base_unit when None.
     unit: str | None = None
     checked: bool = False
-    food: Food
+    barcode: str | None = None
+    food: Food | None = None
+    recipe_id: str | None = None
+    recipe: Recipe | None = None
 
 
 class Meal(CamelModel):
@@ -47,6 +54,11 @@ class LoggedFoodCreate(CamelModel):
     barcode: str
     quantity: float = Field(gt=0)
     unit: str | None = None
+
+
+class LoggedRecipeCreate(CamelModel):
+    recipe_id: str
+    servings: float = Field(gt=0)
 
 
 class LoggedFoodPatch(CamelModel):
