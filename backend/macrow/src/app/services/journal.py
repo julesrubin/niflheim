@@ -78,11 +78,14 @@ class JournalRepository:
         servings: float,
     ) -> dict:
         """Append a recipe-backed item to meals[kind].items. Lazy-creates the day."""
+        # No unit on recipe items — quantity is in servings; the client
+        # renders "1 portion" / "2 portions" itself. Storing a plural-aware
+        # string here would drift on PATCH and bake locale into Firestore.
         item = {
             "id": str(uuid.uuid4()),
             "recipe_id": recipe_id,
             "quantity": servings,
-            "unit": "portion" if servings == 1 else "portions",
+            "unit": None,
             "checked": False,
         }
         await self._append_item(date, kind, item)

@@ -31,7 +31,10 @@ class LoggedFood(CamelModel):
 
     id: str
     quantity: float
-    # "g" | "ml" | "portion" | "item"; clients default to food.base_unit when None.
+    # Display hint. For food items the server forwards what the client sent on
+    # POST (typically food.base_unit, "g" or "ml"); for recipe items it's
+    # always None — quantity is in servings and the client renders the label
+    # ("1 portion" / "2 portions") itself.
     unit: str | None = None
     checked: bool = False
     barcode: str | None = None
