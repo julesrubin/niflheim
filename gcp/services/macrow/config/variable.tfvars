@@ -1,5 +1,4 @@
 project_id      = "portfolio-jrubin"
-project_number  = "198946929552"
 region          = "europe-west1"
 repository_name = "niflheim"
 context         = "macrow"
