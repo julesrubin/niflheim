@@ -17,6 +17,20 @@ class RecipeNotFound(Exception):
     """Raised by services.recipe when a recipe id doesn't resolve."""
 
 
+# OpenAPI `responses=` snippets per status code so iOS / docs see the real
+# error envelope shape, not just the 200 schema. Spread these per route:
+#   responses={**ERR_400, **ERR_404}
+ERR_400: dict[int | str, dict] = {
+    400: {"model": ApiErrorResponse, "description": "Validation error"}
+}
+ERR_404: dict[int | str, dict] = {
+    404: {"model": ApiErrorResponse, "description": "Resource not found"}
+}
+ERR_502: dict[int | str, dict] = {
+    502: {"model": ApiErrorResponse, "description": "Upstream unavailable"}
+}
+
+
 def error_response(
     status_code: int,
     code: str,

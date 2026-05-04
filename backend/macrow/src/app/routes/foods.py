@@ -21,7 +21,13 @@ from ..config.constants import (
 from ..models.food import Food, FoodSearchResponse, SourceBreakdown
 from ..services.food import FoodRepository, resolve_food
 from ..services.off import OffClient
-from ..utils.error import OffUnavailable, barcode_not_found, off_unavailable
+from ..utils.error import (
+    ERR_404,
+    ERR_502,
+    OffUnavailable,
+    barcode_not_found,
+    off_unavailable,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +48,7 @@ def get_repo(request: Request) -> FoodRepository:
     return request.app.state.food_repo
 
 
-@router.get("/search", response_model=FoodSearchResponse)
+@router.get("/search", response_model=FoodSearchResponse, responses={**ERR_502})
 async def search_foods(
     q: str = Query(
         min_length=MIN_SEARCH_QUERY_LENGTH,
@@ -112,7 +118,7 @@ async def search_foods(
     )
 
 
-@router.get("/{barcode}", response_model=Food)
+@router.get("/{barcode}", response_model=Food, responses={**ERR_404, **ERR_502})
 async def get_food_by_barcode(
     barcode: str,
     off: OffClient = Depends(get_off),

@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 from ..models.recipe import Recipe, RecipeCreate, RecipePatch
 from ..services.food import FoodRepository
 from ..services.recipe import RecipeRepository, compute_macros
-from ..utils.error import RecipeNotFound, recipe_not_found
+from ..utils.error import ERR_404, RecipeNotFound, recipe_not_found
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ async def list_recipes(
     return await _decorate_many(recipes, foods)
 
 
-@router.get("/{recipe_id}", response_model=Recipe)
+@router.get("/{recipe_id}", response_model=Recipe, responses={**ERR_404})
 async def get_recipe(
     recipe_id: str,
     repo: RecipeRepository = Depends(get_recipe_repo),
@@ -71,7 +71,7 @@ async def get_recipe(
     return await _decorate(recipe, foods)
 
 
-@router.patch("/{recipe_id}", response_model=Recipe)
+@router.patch("/{recipe_id}", response_model=Recipe, responses={**ERR_404})
 async def patch_recipe(
     recipe_id: str,
     body: RecipePatch,
