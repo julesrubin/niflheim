@@ -9,7 +9,7 @@ import asyncio
 import logging
 from enum import StrEnum
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
 from ..config.constants import (
@@ -28,6 +28,7 @@ from ..utils.error import (
     barcode_not_found,
     off_unavailable,
 )
+from .deps import get_food_repo, get_off
 
 logger = logging.getLogger(__name__)
 
@@ -40,14 +41,6 @@ class SearchSource(StrEnum):
     off = "off"
 
 
-def get_off(request: Request) -> OffClient:
-    return request.app.state.off_client
-
-
-def get_repo(request: Request) -> FoodRepository:
-    return request.app.state.food_repo
-
-
 @router.get("/search", response_model=FoodSearchResponse, responses={**ERR_502})
 async def search_foods(
     q: str = Query(
@@ -58,7 +51,7 @@ async def search_foods(
     limit: int = Query(default=DEFAULT_SEARCH_LIMIT, ge=1, le=MAX_SEARCH_LIMIT),
     offset: int = Query(default=0, ge=0),
     off: OffClient = Depends(get_off),
-    repo: FoodRepository = Depends(get_repo),
+    repo: FoodRepository = Depends(get_food_repo),
 ) -> FoodSearchResponse | JSONResponse:
     cache_results: list[Food] = []
     off_results: list[Food] = []
@@ -122,7 +115,7 @@ async def search_foods(
 async def get_food_by_barcode(
     barcode: str,
     off: OffClient = Depends(get_off),
-    repo: FoodRepository = Depends(get_repo),
+    repo: FoodRepository = Depends(get_food_repo),
 ) -> Food | JSONResponse:
     try:
         product = await resolve_food(barcode, repo, off)

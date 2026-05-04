@@ -7,10 +7,11 @@ fetches — neither the model nor the repository changes, only this layer.
 
 import logging
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends
 
 from ..models.user import User, UserPatch
 from ..services.user import UserRepository
+from .deps import get_user_repo
 
 logger = logging.getLogger(__name__)
 
@@ -18,10 +19,6 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 # Resolved against the auth token once auth lands; for now a fixed string.
 CURRENT_USER_ID = "me"
-
-
-def get_user_repo(request: Request) -> UserRepository:
-    return request.app.state.user_repo
 
 
 @router.get("/me", response_model=User)

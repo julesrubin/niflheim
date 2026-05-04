@@ -14,7 +14,7 @@ import asyncio
 import logging
 from datetime import date
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, Response
 from fastapi.responses import JSONResponse
 
 from ..models.food import Food
@@ -34,6 +34,7 @@ from ..services.food import FoodRepository, resolve_food
 from ..services.journal import JournalRepository
 from ..services.off import OffClient
 from ..services.recipe import RecipeRepository, compute_macros
+from .deps import get_food_repo, get_journal_repo, get_off, get_recipe_repo
 from ..utils.error import (
     ERR_400,
     ERR_404,
@@ -53,22 +54,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/journal", tags=["journal"])
 
 _ALLOWED_MEAL_KINDS: tuple[str, ...] = tuple(k.value for k in MealKind)
-
-
-def get_off(request: Request) -> OffClient:
-    return request.app.state.off_client
-
-
-def get_food_repo(request: Request) -> FoodRepository:
-    return request.app.state.food_repo
-
-
-def get_journal_repo(request: Request) -> JournalRepository:
-    return request.app.state.journal_repo
-
-
-def get_recipe_repo(request: Request) -> RecipeRepository:
-    return request.app.state.recipe_repo
 
 
 @router.get("/days/{date}", response_model=DailyJournal, responses={**ERR_400})
