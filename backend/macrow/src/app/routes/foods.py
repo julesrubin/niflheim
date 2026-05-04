@@ -81,7 +81,7 @@ async def search_foods(
     if cache_task is not None:
         r = results[idx]
         idx += 1
-        if isinstance(r, BaseException):
+        if isinstance(r, Exception):
             logger.warning("Cache search failed: %s", r)
         else:
             cache_results = r
@@ -91,7 +91,7 @@ async def search_foods(
             if source == SearchSource.off:
                 return off_unavailable()
             logger.warning("OFF search failed; degrading to cache-only")
-        elif isinstance(r, BaseException):
+        elif isinstance(r, Exception):
             logger.warning("OFF search raised unexpectedly: %s", r)
             if source == SearchSource.off:
                 return off_unavailable()
