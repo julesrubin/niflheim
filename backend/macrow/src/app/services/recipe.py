@@ -12,7 +12,7 @@ contract.
 
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from google.cloud import firestore
 
@@ -80,7 +80,7 @@ class RecipeRepository:
 
     async def create(self, body: RecipeCreate) -> Recipe:
         recipe_id = str(uuid.uuid4())
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         doc = body.model_dump(by_alias=False)
         doc.update({"id": recipe_id, "created_at": now, "updated_at": now})
         await self._recipes.document(recipe_id).set(doc)
@@ -130,7 +130,7 @@ class RecipeRepository:
                 raise RecipeNotFound(recipe_id)
             doc = snap.to_dict() or {}
             doc.update(updates)
-            doc["updated_at"] = datetime.now(timezone.utc)
+            doc["updated_at"] = datetime.now(UTC)
             transaction.set(doc_ref, doc)
             result = _doc_to_recipe(doc)
 
