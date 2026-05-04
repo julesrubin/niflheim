@@ -91,14 +91,10 @@ class RecipeRepository:
         assert result is not None
         return result
 
-    async def delete(self, recipe_id: str) -> bool:
-        """Returns True if a doc was removed, False if it didn't exist."""
-        doc_ref = self._recipes.document(recipe_id)
-        snap = await doc_ref.get()
-        if not snap.exists:
-            return False
-        await doc_ref.delete()
-        return True
+    async def delete(self, recipe_id: str) -> None:
+        """Idempotent delete — Firestore treats deleting a missing doc as a no-op,
+        so a read-first guard would only add a TOCTOU window and a round-trip."""
+        await self._recipes.document(recipe_id).delete()
 
     def close(self) -> None:
         self._client.close()
