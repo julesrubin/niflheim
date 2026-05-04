@@ -60,7 +60,12 @@ class RecipeRepository:
         return [_doc_to_recipe(s.to_dict() or {}) for s in snaps]
 
     async def patch(self, recipe_id: str, patch: RecipePatch) -> Recipe:
-        updates = patch.model_dump(exclude_unset=True, by_alias=False)
+        # exclude_none=True: explicit `null` from a client means "leave alone",
+        # never "write None into a non-Optional storage field". Clear-to-default
+        # is not a PATCH semantic on this surface.
+        updates = patch.model_dump(
+            exclude_unset=True, exclude_none=True, by_alias=False
+        )
         if not updates:
             existing = await self.get(recipe_id)
             if existing is None:
