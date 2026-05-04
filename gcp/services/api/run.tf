@@ -2,11 +2,19 @@ locals {
   cloud_run_services = {
     "api_service" = {
       name            = "api"
-      is_public       = true
+      is_public       = false
       container_port  = 8000
       service_account = google_service_account.service_account["api-service"].email
     }
   }
+}
+
+# Caddy is the only legitimate caller — invoke this service as the proxy SA,
+# not allUsers. Combined with is_public=false (INGRESS_TRAFFIC_INTERNAL_ONLY)
+# this is defence in depth: network layer blocks the *.run.app URL, IAM
+# layer blocks anything that does reach the service.
+data "google_service_account" "proxy_invoker" {
+  account_id = "proxy-invoker-${var.repository_name}"
 }
 
 module "cloud_run_services" {
@@ -27,7 +35,7 @@ resource "google_cloud_run_v2_service_iam_member" "cloud_run_services_invoker" {
   location = var.region
   name     = each.value.name
   role     = "roles/run.invoker"
-  member   = "allUsers"
+  member   = "serviceAccount:${data.google_service_account.proxy_invoker.email}"
 
   depends_on = [
     module.cloud_run_services
