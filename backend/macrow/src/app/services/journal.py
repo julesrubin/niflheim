@@ -59,7 +59,7 @@ class JournalRepository:
         quantity: float,
         unit: str | None,
     ) -> dict:
-        """Append a new item to meals[kind].items. Lazy-creates the day."""
+        """Append a food-backed item to meals[kind].items. Lazy-creates the day."""
         item = {
             "id": str(uuid.uuid4()),
             "barcode": barcode,
@@ -67,6 +67,28 @@ class JournalRepository:
             "unit": unit,
             "checked": False,
         }
+        await self._append_item(date, kind, item)
+        return item
+
+    async def add_recipe_item(
+        self,
+        date: str,
+        kind: MealKind,
+        recipe_id: str,
+        servings: float,
+    ) -> dict:
+        """Append a recipe-backed item to meals[kind].items. Lazy-creates the day."""
+        item = {
+            "id": str(uuid.uuid4()),
+            "recipe_id": recipe_id,
+            "quantity": servings,
+            "unit": "portion" if servings == 1 else "portions",
+            "checked": False,
+        }
+        await self._append_item(date, kind, item)
+        return item
+
+    async def _append_item(self, date: str, kind: MealKind, item: dict) -> None:
         doc_ref = self._days.document(date)
 
         @firestore.async_transactional
@@ -78,7 +100,6 @@ class JournalRepository:
             transaction.set(doc_ref, doc)
 
         await _tx(self._client.transaction())
-        return item
 
     async def patch_item(
         self,

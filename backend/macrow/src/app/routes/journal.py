@@ -1,11 +1,16 @@
 """Daily food journal — read, log, edit, delete, and move items.
 
 Storage is one Firestore doc per day. Each route validates the path date /
-meal-kind, delegates to `JournalRepository`, and embeds the cached Food on
-read paths via `FoodRepository.get_many` so the iOS client gets everything
-in one HTTP round-trip.
+meal-kind, delegates to `JournalRepository`, and embeds the cached Food OR the
+referenced Recipe on read paths so the iOS client gets everything in one HTTP
+round-trip.
+
+A logged item is either food-backed (barcode + Food) or recipe-backed
+(recipe_id + Recipe). Exactly one ref is stored per item; embed-on-read joins
+to whichever cache the item points at.
 """
 
+import asyncio
 import logging
 from datetime import datetime
 
@@ -19,13 +24,16 @@ from ..models.journal import (
     LoggedFood,
     LoggedFoodCreate,
     LoggedFoodPatch,
+    LoggedRecipeCreate,
     Meal,
     MealKind,
     MoveItemsRequest,
 )
+from ..models.recipe import Recipe
 from ..services.food import FoodRepository, resolve_food
 from ..services.journal import JournalRepository
 from ..services.off import OffClient
+from ..services.recipe import RecipeRepository
 from ..utils.error import (
     JournalItemNotFound,
     OffUnavailable,
@@ -34,6 +42,7 @@ from ..utils.error import (
     invalid_meal_kind,
     journal_item_not_found,
     off_unavailable,
+    recipe_not_found,
 )
 
 logger = logging.getLogger(__name__)
@@ -53,17 +62,22 @@ def get_journal_repo(request: Request) -> JournalRepository:
     return request.app.state.journal_repo
 
 
+def get_recipe_repo(request: Request) -> RecipeRepository:
+    return request.app.state.recipe_repo
+
+
 @router.get("/days/{date}", response_model=DailyJournal)
 async def get_journal_day(
     date: str,
     journal: JournalRepository = Depends(get_journal_repo),
     foods: FoodRepository = Depends(get_food_repo),
+    recipes: RecipeRepository = Depends(get_recipe_repo),
 ) -> DailyJournal | JSONResponse:
     if not _is_valid_date(date):
         return invalid_date(date)
     doc = await journal.get_or_create(date)
-    food_map = await _load_foods(foods, doc)
-    return _shape_day(doc, food_map)
+    food_map, recipe_map = await _load_refs(foods, recipes, doc)
+    return _shape_day(doc, food_map, recipe_map)
 
 
 @router.post("/days/{date}/meals/{kind}/items", response_model=LoggedFood)
@@ -95,7 +109,34 @@ async def add_journal_item(
         quantity=body.quantity,
         unit=body.unit,
     )
-    return _to_logged_food(item, food)
+    return _to_logged_food(item, food=food)
+
+
+@router.post("/days/{date}/meals/{kind}/recipes", response_model=LoggedFood)
+async def add_journal_recipe(
+    date: str,
+    kind: str,
+    body: LoggedRecipeCreate,
+    journal: JournalRepository = Depends(get_journal_repo),
+    recipes: RecipeRepository = Depends(get_recipe_repo),
+) -> LoggedFood | JSONResponse:
+    if not _is_valid_date(date):
+        return invalid_date(date)
+    meal_kind = _to_meal_kind(kind)
+    if meal_kind is None:
+        return invalid_meal_kind(kind, tuple(k.value for k in MealKind))
+
+    recipe = await recipes.get(body.recipe_id)
+    if recipe is None:
+        return recipe_not_found(body.recipe_id)
+
+    item = await journal.add_recipe_item(
+        date=date,
+        kind=meal_kind,
+        recipe_id=body.recipe_id,
+        servings=body.servings,
+    )
+    return _to_logged_food(item, recipe=recipe)
 
 
 @router.patch("/days/{date}/items/{item_id}", response_model=LoggedFood)
@@ -105,6 +146,7 @@ async def patch_journal_item(
     patch: LoggedFoodPatch,
     journal: JournalRepository = Depends(get_journal_repo),
     foods: FoodRepository = Depends(get_food_repo),
+    recipes: RecipeRepository = Depends(get_recipe_repo),
 ) -> LoggedFood | JSONResponse:
     if not _is_valid_date(date):
         return invalid_date(date)
@@ -113,16 +155,28 @@ async def patch_journal_item(
     except JournalItemNotFound:
         return journal_item_not_found(item_id)
 
-    food_map = await foods.get_many([item["barcode"]])
-    food = food_map.get(item["barcode"])
+    if item.get("recipe_id"):
+        recipe = await recipes.get(item["recipe_id"])
+        if recipe is None:
+            logger.warning(
+                "Patched item %s references missing recipe %s",
+                item_id,
+                item["recipe_id"],
+            )
+            return recipe_not_found(item["recipe_id"])
+        return _to_logged_food(item, recipe=recipe)
+
+    barcode = item.get("barcode")
+    if barcode is None:
+        # Should not happen — POST validates; surface clearly if it ever does.
+        logger.error("Patched item %s has neither barcode nor recipe_id", item_id)
+        return journal_item_not_found(item_id)
+    food_map = await foods.get_many([barcode])
+    food = food_map.get(barcode)
     if food is None:
-        # Stale ref — the cache lost the food. Surface as 404 so the client
-        # drops the item rather than silently rendering it without macros.
-        logger.warning(
-            "Patched item %s references missing food %s", item_id, item["barcode"]
-        )
-        return barcode_not_found(item["barcode"])
-    return _to_logged_food(item, food)
+        logger.warning("Patched item %s references missing food %s", item_id, barcode)
+        return barcode_not_found(barcode)
+    return _to_logged_food(item, food=food)
 
 
 @router.delete("/days/{date}/items/{item_id}", response_model=None)
@@ -186,45 +240,88 @@ def _to_meal_kind(value: str) -> MealKind | None:
         return None
 
 
-async def _load_foods(repo: FoodRepository, doc: dict) -> dict[str, Food]:
-    """Collect unique barcodes from all four meals and batch-read them."""
+async def _load_refs(
+    food_repo: FoodRepository,
+    recipe_repo: RecipeRepository,
+    doc: dict,
+) -> tuple[dict[str, Food], dict[str, Recipe]]:
+    """Collect unique barcodes and recipe ids across all meals; batch-read both."""
     meals = doc.get("meals") or {}
-    barcodes = {
-        item["barcode"] for meal in meals.values() for item in meal.get("items", [])
-    }
-    if not barcodes:
-        return {}
-    return await repo.get_many(list(barcodes))
+    barcodes: set[str] = set()
+    recipe_ids: set[str] = set()
+    for meal in meals.values():
+        for item in meal.get("items", []):
+            if item.get("barcode"):
+                barcodes.add(item["barcode"])
+            if item.get("recipe_id"):
+                recipe_ids.add(item["recipe_id"])
+    foods, recipes = await asyncio.gather(
+        food_repo.get_many(list(barcodes)),
+        recipe_repo.get_many(list(recipe_ids)),
+    )
+    return foods, recipes
 
 
-def _shape_day(doc: dict, foods: dict[str, Food]) -> DailyJournal:
-    """Build the wire-shape DailyJournal, dropping items whose food has been evicted."""
+def _shape_day(
+    doc: dict,
+    foods: dict[str, Food],
+    recipes: dict[str, Recipe],
+) -> DailyJournal:
+    """Build the wire-shape DailyJournal, dropping items whose ref has been evicted."""
     storage_meals = doc.get("meals") or {}
     meals: list[Meal] = []
     for kind in MealKind:
         raw_items = (storage_meals.get(kind.value) or {}).get("items", [])
         items: list[LoggedFood] = []
         for raw in raw_items:
-            food = foods.get(raw["barcode"])
+            if raw.get("recipe_id"):
+                recipe = recipes.get(raw["recipe_id"])
+                if recipe is None:
+                    logger.warning(
+                        "Dropping item %s on %s: recipe %s no longer in store",
+                        raw["id"],
+                        doc.get("date"),
+                        raw["recipe_id"],
+                    )
+                    continue
+                items.append(_to_logged_food(raw, recipe=recipe))
+                continue
+
+            barcode = raw.get("barcode")
+            if barcode is None:
+                logger.warning(
+                    "Dropping item %s on %s: no barcode and no recipe_id",
+                    raw["id"],
+                    doc.get("date"),
+                )
+                continue
+            food = foods.get(barcode)
             if food is None:
                 logger.warning(
                     "Dropping item %s on %s: barcode %s no longer in cache",
                     raw["id"],
                     doc.get("date"),
-                    raw["barcode"],
+                    barcode,
                 )
                 continue
-            items.append(_to_logged_food(raw, food))
+            items.append(_to_logged_food(raw, food=food))
         meals.append(Meal(kind=kind, items=items))
     return DailyJournal(date=doc["date"], meals=meals)
 
 
-def _to_logged_food(raw: dict, food: Food) -> LoggedFood:
+def _to_logged_food(
+    raw: dict,
+    *,
+    food: Food | None = None,
+    recipe: Recipe | None = None,
+) -> LoggedFood:
     return LoggedFood(
         id=raw["id"],
-        barcode=raw["barcode"],
         quantity=raw["quantity"],
         unit=raw.get("unit"),
         checked=raw.get("checked", False),
+        barcode=raw.get("barcode"),
         food=food,
+        recipe_id=raw.get("recipe_id"),
+        recipe=recipe,
     )
