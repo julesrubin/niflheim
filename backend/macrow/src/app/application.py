@@ -6,10 +6,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from .config.settings import settings
-from .routes import foods, health, journal, user
+from .routes import foods, health, journal, recipe, user
 from .services.food import FoodRepository
 from .services.journal import JournalRepository
 from .services.off import OffClient
+from .services.recipe import RecipeRepository
 from .services.user import UserRepository
 
 logger = logging.getLogger(__name__)
@@ -40,6 +41,10 @@ async def lifespan(app: FastAPI):
         project=settings.FIRESTORE_PROJECT,
         database=settings.FIRESTORE_DATABASE,
     )
+    app.state.recipe_repo = RecipeRepository(
+        project=settings.FIRESTORE_PROJECT,
+        database=settings.FIRESTORE_DATABASE,
+    )
     logger.info(
         "Lifespan ready: OFF=%s firestore=%s/%s",
         settings.OFF_BASE_URL,
@@ -53,6 +58,7 @@ async def lifespan(app: FastAPI):
         app.state.food_repo.close()
         app.state.journal_repo.close()
         app.state.user_repo.close()
+        app.state.recipe_repo.close()
 
 
 def create_app() -> FastAPI:
@@ -70,6 +76,7 @@ def create_app() -> FastAPI:
     app.include_router(foods.router)
     app.include_router(journal.router)
     app.include_router(user.router)
+    app.include_router(recipe.router)
 
     logger.info(
         "FastAPI application created: %s v%s (root_path=%s)",
