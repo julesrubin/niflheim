@@ -27,15 +27,14 @@ class LoggedFood(CamelModel):
     """A single eaten item — either food-backed (barcode + food) or recipe-backed
     (recipe_id + recipe). Exactly one ref is set; both are optional in the DTO so
     the same shape carries both kinds of entries.
+
+    quantity is in the unit defined by the embedded ref:
+    - food-backed: food.base_unit (g for solids, ml for liquids).
+    - recipe-backed: number of servings; client renders "portion" / "portions".
     """
 
     id: str
     quantity: float
-    # Display hint. For food items the server forwards what the client sent on
-    # POST (typically food.base_unit, "g" or "ml"); for recipe items it's
-    # always None — quantity is in servings and the client renders the label
-    # ("1 portion" / "2 portions") itself.
-    unit: str | None = None
     checked: bool = False
     barcode: str | None = None
     food: Food | None = None
@@ -56,7 +55,6 @@ class DailyJournal(CamelModel):
 class LoggedFoodCreate(CamelModel):
     barcode: str
     quantity: float = Field(gt=0)
-    unit: str | None = None
 
 
 class LoggedRecipeCreate(CamelModel):
@@ -67,7 +65,6 @@ class LoggedRecipeCreate(CamelModel):
 class LoggedFoodPatch(CamelModel):
     checked: bool | None = None
     quantity: float | None = Field(default=None, gt=0)
-    unit: str | None = None
 
 
 class BulkDeleteRequest(CamelModel):

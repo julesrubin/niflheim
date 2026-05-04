@@ -57,14 +57,16 @@ class JournalRepository:
         kind: MealKind,
         barcode: str,
         quantity: float,
-        unit: str | None,
     ) -> dict:
-        """Append a food-backed item to meals[kind].items. Lazy-creates the day."""
+        """Append a food-backed item to meals[kind].items. Lazy-creates the day.
+
+        quantity is in food.base_unit (g/ml). The unit itself is never stored —
+        Food is the single source of truth and is embedded on read.
+        """
         item = {
             "id": str(uuid.uuid4()),
             "barcode": barcode,
             "quantity": quantity,
-            "unit": unit,
             "checked": False,
         }
         await self._append_item(date, kind, item)
@@ -77,15 +79,14 @@ class JournalRepository:
         recipe_id: str,
         servings: float,
     ) -> dict:
-        """Append a recipe-backed item to meals[kind].items. Lazy-creates the day."""
-        # No unit on recipe items — quantity is in servings; the client
-        # renders "1 portion" / "2 portions" itself. Storing a plural-aware
-        # string here would drift on PATCH and bake locale into Firestore.
+        """Append a recipe-backed item to meals[kind].items. Lazy-creates the day.
+
+        quantity holds the number of servings; "portion(s)" is a render concern.
+        """
         item = {
             "id": str(uuid.uuid4()),
             "recipe_id": recipe_id,
             "quantity": servings,
-            "unit": None,
             "checked": False,
         }
         await self._append_item(date, kind, item)
@@ -225,8 +226,6 @@ def _apply_patch(doc: dict, item_id: str, patch: LoggedFoodPatch) -> dict | None
                     item["checked"] = patch.checked
                 if patch.quantity is not None:
                     item["quantity"] = patch.quantity
-                if patch.unit is not None:
-                    item["unit"] = patch.unit
                 return item
     return None
 

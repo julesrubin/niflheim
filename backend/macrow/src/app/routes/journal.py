@@ -107,7 +107,6 @@ async def add_journal_item(
         kind=meal_kind,
         barcode=body.barcode,
         quantity=body.quantity,
-        unit=body.unit,
     )
     return _to_logged_food(item, food=food)
 
@@ -318,7 +317,6 @@ def _to_logged_food(
     return LoggedFood(
         id=raw["id"],
         quantity=raw["quantity"],
-        unit=raw.get("unit"),
         checked=raw.get("checked", False),
         barcode=raw.get("barcode"),
         food=food,
