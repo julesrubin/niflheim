@@ -52,6 +52,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/journal", tags=["journal"])
 
+_ALLOWED_MEAL_KINDS: tuple[str, ...] = tuple(k.value for k in MealKind)
+
 
 def get_off(request: Request) -> OffClient:
     return request.app.state.off_client
@@ -100,7 +102,7 @@ async def add_journal_item(
         return invalid_date(date)
     meal_kind = _to_meal_kind(kind)
     if meal_kind is None:
-        return invalid_meal_kind(kind, tuple(k.value for k in MealKind))
+        return invalid_meal_kind(kind, _ALLOWED_MEAL_KINDS)
 
     try:
         food = await resolve_food(body.barcode, foods, off)
@@ -135,7 +137,7 @@ async def add_journal_recipe(
         return invalid_date(date)
     meal_kind = _to_meal_kind(kind)
     if meal_kind is None:
-        return invalid_meal_kind(kind, tuple(k.value for k in MealKind))
+        return invalid_meal_kind(kind, _ALLOWED_MEAL_KINDS)
 
     recipe = await recipes.get(body.recipe_id)
     if recipe is None:
