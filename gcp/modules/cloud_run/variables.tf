@@ -25,6 +25,15 @@ variable "env_vars" {
   default     = {}
 }
 
+variable "secret_env_vars" {
+  type = map(object({
+    secret  = string
+    version = optional(string, "latest")
+  }))
+  description = "Env vars sourced from Secret Manager. Map key = env var name; secret = secret_id; version defaults to 'latest'."
+  default     = {}
+}
+
 variable "container_port" {
   type        = number
   description = "The port the container listens on."

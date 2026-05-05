@@ -21,6 +21,21 @@ resource "google_cloud_run_v2_service" "main" {
           value = env.value
         }
       }
+
+      # Secret-backed env vars — sourced from Secret Manager at instance start.
+      # Map shape: { ENV_NAME = { secret = "<secret_id>", version = "latest" } }.
+      dynamic "env" {
+        for_each = var.secret_env_vars
+        content {
+          name = env.key
+          value_source {
+            secret_key_ref {
+              secret  = env.value.secret
+              version = env.value.version
+            }
+          }
+        }
+      }
     }
   }
   deletion_protection = false
