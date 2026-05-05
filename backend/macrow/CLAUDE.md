@@ -35,6 +35,49 @@ just deploy             # gcloud run deploy
 - All routes are prefixed with `/macrow` (`root_path` in `application.py`, sourced from `Settings.ROOT_PATH`).
 - In production, Caddy strips `/macrow/` before forwarding; upstream code rebuilds URLs from `root_path`.
 
+### Authentication
+
+Single-user static bearer token. Every route except `GET /health` requires `Authorization: Bearer <token>`; user-scoped routes additionally enforce `path :user_id == token user_id` (403 on mismatch).
+
+- Source of truth: Secret Manager secret `niflheim-macrow-bearer-token`, mounted into Cloud Run as `BEARER_TOKEN` env var.
+- FastAPI side: `src/app/auth.py` — `current_user_id` (HTTPBearer) and `owned_user_id` (combines path + token). Wired in `application.py` via a parent `APIRouter(prefix="/users/{user_id}", dependencies=[Depends(owned_user_id)])` so journal & recipe routes inherit the guard.
+- OpenAPI: declared as `bearerAuth` scheme — the `/docs` Authorize button takes a single token.
+
+#### Local dev
+
+```bash
+# backend/macrow/.env
+BEARER_TOKEN=devtoken
+CURRENT_USER_ID=me
+```
+
+```bash
+# Smoke against the running server
+MACROW_TOKEN=devtoken just smoke
+# Or persist:
+echo "MACROW_TOKEN=devtoken" > backend/macrow/.macrow.env  # gitignored, sourced by `just smoke`
+```
+
+#### Rotation
+
+```bash
+# 1. Generate a new value, push as a new secret version.
+openssl rand -base64 32 | gcloud secrets versions add niflheim-macrow-bearer-token \
+    --data-file=- --project portfolio-jrubin
+
+# 2. Force a fresh Cloud Run revision so the new env value is read.
+gcloud run services update-traffic macrow --to-latest \
+    --region europe-west1 --project portfolio-jrubin
+
+# 3. Distribute the new value to clients (iOS Keychain, .macrow.env).
+```
+
+#### Auth-exempt routes
+
+- `GET /health` — Cloud Run liveness probe; never auth-gated.
+
+When auth grows to Firebase Auth + Sign in with Apple, only the body of `auth.current_user_id` changes (it returns the verified `uid` claim instead of the constant `settings.CURRENT_USER_ID`). The route surface stays identical, so iOS clients won't see a wire-shape break.
+
 ## Architecture
 
 ### Source layout
