@@ -4,11 +4,21 @@
 #   #!/usr/bin/env bash
 #   . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_lib.sh"
 #
-# Override the target with MACROW_BASE_URL=https://julesrubin.com/macrow.
+# Required env:
+#   MACROW_TOKEN  — bearer token (matches Cloud Run BEARER_TOKEN secret).
+# Optional env:
+#   MACROW_BASE_URL — defaults to http://127.0.0.1:8000/macrow.
+#   USER_ID         — defaults to "me" (matches CURRENT_USER_ID in settings).
 
 set -euo pipefail
 
 BASE_URL="${MACROW_BASE_URL:-http://127.0.0.1:8000/macrow}"
+USER_ID="${USER_ID:-me}"
+
+if [ -z "${MACROW_TOKEN:-}" ]; then
+    printf "✗ MACROW_TOKEN is required (export it or write it to backend/macrow/.macrow.env)\n" >&2
+    exit 2
+fi
 
 if [ -t 1 ]; then
     RED=$'\033[0;31m'
@@ -25,16 +35,20 @@ fail()    { printf "%s✗ %s%s\n" "$RED" "$1" "$NC" >&2; exit 1; }
 
 # Run a request and capture body + status into BODY and STATUS globals.
 # Usage: req METHOD PATH [JSON_BODY]
+# Always injects Authorization: Bearer $MACROW_TOKEN.
 req() {
     local method="$1" path="$2" data="${3:-}"
     local response
     if [ -n "$data" ]; then
         response=$(curl -sS -w "\n%{http_code}" -X "$method" \
+            -H "Authorization: Bearer $MACROW_TOKEN" \
             -H 'content-type: application/json' \
             -d "$data" \
             "$BASE_URL$path")
     else
-        response=$(curl -sS -w "\n%{http_code}" -X "$method" "$BASE_URL$path")
+        response=$(curl -sS -w "\n%{http_code}" -X "$method" \
+            -H "Authorization: Bearer $MACROW_TOKEN" \
+            "$BASE_URL$path")
     fi
     STATUS=$(printf '%s' "$response" | tail -n1)
     BODY=$(printf '%s' "$response" | sed '$d')
