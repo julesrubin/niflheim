@@ -1,6 +1,6 @@
 """Application configuration using Pydantic BaseSettings."""
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -32,6 +32,14 @@ class Settings(BaseSettings):
 
     FIRESTORE_PROJECT: str | None = Field(default=None)
     FIRESTORE_DATABASE: str = Field(default="macrow")
+
+    # Single shared secret for the bearer-token guard. Provisioned out-of-band
+    # via Secret Manager (`niflheim-macrow-bearer-token`) and mounted into the
+    # Cloud Run env as BEARER_TOKEN. No default — startup fails loud if missing.
+    BEARER_TOKEN: SecretStr
+    # Today the bearer token resolves to this single user id. When auth grows
+    # to Firebase, the auth module returns the verified `uid` claim instead.
+    CURRENT_USER_ID: str = Field(default="me")
 
 
 settings = Settings()

@@ -4,15 +4,19 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 
+from .auth import owned_user_id
 from .config.settings import settings
+from .models.common import ApiError, ApiErrorResponse
 from .routes import foods, health, journal, recipe, user
 from .services.food import FoodRepository
 from .services.journal import JournalRepository
 from .services.off import OffClient
 from .services.recipe import RecipeRepository
 from .services.user import UserRepository
+from .utils.error import EnvelopeHTTPException
 
 logger = logging.getLogger(__name__)
 
@@ -84,11 +88,44 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    # Auth-exempt: Cloud Run probes hit /health unauthenticated.
     app.include_router(health.router)
+    # Foods is global (cached OFF data, shared across users) — auth-gated only.
     app.include_router(foods.router)
-    app.include_router(journal.router)
-    app.include_router(user.router)
-    app.include_router(recipe.router)
+
+    # Everything user-scoped lives under /users/{user_id}/... so the path itself
+    # carries the identity claim. `owned_user_id` is mounted on the parent
+    # router so every nested route inherits the 401/403 guard.
+    users_router = APIRouter(
+        prefix="/users/{user_id}",
+        dependencies=[Depends(owned_user_id)],
+    )
+    users_router.include_router(journal.router)
+    users_router.include_router(recipe.router)
+    app.include_router(user.router)  # /users/{user_id} (top-level GET/PATCH)
+    app.include_router(users_router)
+
+    @app.exception_handler(EnvelopeHTTPException)
+    async def _envelope_http_exc_handler(
+        request: Request, exc: EnvelopeHTTPException
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=ApiErrorResponse(
+                error=ApiError(code=exc.code, message=str(exc.detail))
+            ).model_dump(by_alias=True),
+        )
+
+    @app.exception_handler(HTTPException)
+    async def _http_exc_handler(request: Request, exc: HTTPException) -> JSONResponse:
+        # Catches any raw HTTPException (e.g. FastAPI internals). Converts to
+        # the project's envelope so iOS / OpenAPI consumers see a uniform shape.
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=ApiErrorResponse(
+                error=ApiError(code="HTTP_ERROR", message=str(exc.detail))
+            ).model_dump(by_alias=True),
+        )
 
     logger.info(
         "FastAPI application created: %s v%s (root_path=%s)",
