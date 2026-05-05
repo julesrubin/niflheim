@@ -1,5 +1,6 @@
 """Error helpers — produce the `{ "error": { code, message, details } }` envelope."""
 
+from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 
 from ..models.common import ApiError, ApiErrorResponse
@@ -17,11 +18,49 @@ class RecipeNotFound(Exception):
     """Raised by services.recipe when a recipe id doesn't resolve."""
 
 
+class EnvelopeHTTPException(HTTPException):
+    """HTTPException variant carrying the `code` we want in the error envelope.
+
+    Raised by auth dependencies (`HTTPBearer` short-circuits return JSONResponse,
+    but `Depends`-time guards must raise). The central HTTPException handler in
+    application.py renders these into the standard ApiError envelope.
+    """
+
+    def __init__(self, status_code: int, code: str, message: str) -> None:
+        super().__init__(status_code=status_code, detail=message)
+        self.code = code
+
+
+def unauthenticated_exc(reason: str = "missing-token") -> EnvelopeHTTPException:
+    return EnvelopeHTTPException(401, "UNAUTHENTICATED", _AUTH_MESSAGES[reason])
+
+
+def forbidden_exc() -> EnvelopeHTTPException:
+    return EnvelopeHTTPException(
+        403, "FORBIDDEN", "You are not allowed to access this resource."
+    )
+
+
+_AUTH_MESSAGES = {
+    "missing-token": "Missing or malformed Authorization header.",
+    "invalid-token": "Invalid bearer token.",
+}
+
+
 # OpenAPI `responses=` snippets per status code so iOS / docs see the real
 # error envelope shape, not just the 200 schema. Spread these per route:
 #   responses={**ERR_400, **ERR_404}
 ERR_400: dict[int | str, dict] = {
     400: {"model": ApiErrorResponse, "description": "Validation error"}
+}
+ERR_401: dict[int | str, dict] = {
+    401: {"model": ApiErrorResponse, "description": "Missing or invalid bearer token"}
+}
+ERR_403: dict[int | str, dict] = {
+    403: {
+        "model": ApiErrorResponse,
+        "description": "Forbidden — token does not own this resource",
+    }
 }
 ERR_404: dict[int | str, dict] = {
     404: {"model": ApiErrorResponse, "description": "Resource not found"}
@@ -29,6 +68,8 @@ ERR_404: dict[int | str, dict] = {
 ERR_502: dict[int | str, dict] = {
     502: {"model": ApiErrorResponse, "description": "Upstream unavailable"}
 }
+# Auth errors apply to every guarded route — spread these alongside route-specific codes.
+ERR_AUTH: dict[int | str, dict] = {**ERR_401, **ERR_403}
 
 
 def error_response(
