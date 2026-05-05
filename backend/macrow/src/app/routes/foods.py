@@ -46,7 +46,12 @@ class SearchSource(StrEnum):
     off = "off"
 
 
-@router.get("/search", response_model=FoodSearchResponse, responses={**ERR_502})
+@router.get(
+    "/search",
+    response_model=FoodSearchResponse,
+    responses={**ERR_502},
+    summary="Search the food cache + Open Food Facts",
+)
 async def search_foods(
     q: str = Query(
         min_length=MIN_SEARCH_QUERY_LENGTH,
@@ -116,12 +121,19 @@ async def search_foods(
     )
 
 
-@router.get("/{barcode}", response_model=Food, responses={**ERR_404, **ERR_502})
+@router.get(
+    "/{barcode}",
+    response_model=Food,
+    responses={**ERR_404, **ERR_502},
+    summary="Look up a food by barcode",
+)
 async def get_food_by_barcode(
     barcode: str,
     off: OffClient = Depends(get_off),
     repo: FoodRepository = Depends(get_food_repo),
 ) -> Food | JSONResponse:
+    """Cache-first: hit Firestore, fall through to OFF on miss, lazily cache
+    the result on the way back so the next caller is a single-read."""
     try:
         product = await resolve_food(barcode, repo, off)
     except OffUnavailable:

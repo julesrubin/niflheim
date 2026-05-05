@@ -56,7 +56,12 @@ router = APIRouter(prefix="/journal", tags=["journal"])
 _ALLOWED_MEAL_KINDS: tuple[str, ...] = tuple(k.value for k in MealKind)
 
 
-@router.get("/days/{date}", response_model=DailyJournal, responses={**ERR_400})
+@router.get(
+    "/days/{date}",
+    response_model=DailyJournal,
+    responses={**ERR_400},
+    summary="Get the journal for a single day",
+)
 async def get_journal_day(
     date: str,
     journal: JournalRepository = Depends(get_journal_repo),
@@ -74,6 +79,7 @@ async def get_journal_day(
     "/days/{date}/meals/{kind}/items",
     response_model=LoggedFood,
     responses={**ERR_400, **ERR_404, **ERR_502},
+    summary="Log a barcode-backed food into a meal",
 )
 async def add_journal_item(
     date: str,
@@ -109,6 +115,7 @@ async def add_journal_item(
     "/days/{date}/meals/{kind}/recipes",
     response_model=LoggedFood,
     responses={**ERR_400, **ERR_404},
+    summary="Log a recipe-backed item into a meal",
 )
 async def add_journal_recipe(
     date: str,
@@ -143,6 +150,7 @@ async def add_journal_recipe(
     "/days/{date}/items/{item_id}",
     response_model=LoggedFood,
     responses={**ERR_400, **ERR_404},
+    summary="Update a logged item (check off / change quantity)",
 )
 async def patch_journal_item(
     date: str,
@@ -189,7 +197,11 @@ async def patch_journal_item(
 
 
 @router.delete(
-    "/days/{date}/items/{item_id}", response_model=None, responses={**ERR_400}
+    "/days/{date}/items/{item_id}",
+    response_model=None,
+    responses={**ERR_400},
+    status_code=204,
+    summary="Delete a single logged item",
 )
 async def delete_journal_item(
     date: str,
@@ -203,7 +215,11 @@ async def delete_journal_item(
 
 
 @router.post(
-    "/days/{date}/items:bulk-delete", response_model=None, responses={**ERR_400}
+    "/days/{date}/items:bulk-delete",
+    response_model=None,
+    responses={**ERR_400},
+    status_code=204,
+    summary="Delete multiple logged items in one call",
 )
 async def bulk_delete_journal_items(
     date: str,
@@ -216,7 +232,13 @@ async def bulk_delete_journal_items(
     return Response(status_code=204)
 
 
-@router.post("/days/{date}/items:move", response_model=None, responses={**ERR_400})
+@router.post(
+    "/days/{date}/items:move",
+    response_model=None,
+    responses={**ERR_400},
+    status_code=204,
+    summary="Move items between meals or to another day",
+)
 async def move_journal_items(
     date: str,
     body: MoveItemsRequest,

@@ -33,7 +33,7 @@ async def _decorate_many(recipes: list[Recipe], foods: FoodRepository) -> list[R
     return [compute_macros(r, food_map) for r in recipes]
 
 
-@router.post("", response_model=Recipe)
+@router.post("", response_model=Recipe, status_code=201, summary="Create a recipe")
 async def create_recipe(
     body: RecipeCreate,
     repo: RecipeRepository = Depends(get_recipe_repo),
@@ -43,7 +43,7 @@ async def create_recipe(
     return await _decorate(recipe, foods)
 
 
-@router.get("", response_model=list[Recipe])
+@router.get("", response_model=list[Recipe], summary="List all recipes")
 async def list_recipes(
     repo: RecipeRepository = Depends(get_recipe_repo),
     foods: FoodRepository = Depends(get_food_repo),
@@ -52,7 +52,12 @@ async def list_recipes(
     return await _decorate_many(recipes, foods)
 
 
-@router.get("/{recipe_id}", response_model=Recipe, responses={**ERR_404})
+@router.get(
+    "/{recipe_id}",
+    response_model=Recipe,
+    responses={**ERR_404},
+    summary="Get a recipe by id",
+)
 async def get_recipe(
     recipe_id: str,
     repo: RecipeRepository = Depends(get_recipe_repo),
@@ -64,7 +69,12 @@ async def get_recipe(
     return await _decorate(recipe, foods)
 
 
-@router.patch("/{recipe_id}", response_model=Recipe, responses={**ERR_404})
+@router.patch(
+    "/{recipe_id}",
+    response_model=Recipe,
+    responses={**ERR_404},
+    summary="Update a recipe",
+)
 async def patch_recipe(
     recipe_id: str,
     body: RecipePatch,
@@ -78,7 +88,12 @@ async def patch_recipe(
     return await _decorate(recipe, foods)
 
 
-@router.delete("/{recipe_id}", response_model=None)
+@router.delete(
+    "/{recipe_id}",
+    response_model=None,
+    status_code=204,
+    summary="Delete a recipe",
+)
 async def delete_recipe(
     recipe_id: str,
     repo: RecipeRepository = Depends(get_recipe_repo),

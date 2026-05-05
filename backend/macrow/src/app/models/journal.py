@@ -53,25 +53,29 @@ class DailyJournal(CamelModel):
 
 
 class LoggedFoodCreate(CamelModel):
-    barcode: str
-    quantity: float = Field(gt=0)
+    barcode: str = Field(examples=["3017620422003"])
+    quantity: float = Field(gt=0, examples=[30.0])
 
 
 class LoggedRecipeCreate(CamelModel):
-    recipe_id: str
-    servings: float = Field(gt=0)
+    recipe_id: str = Field(examples=["rcp_pasta_carbo"])
+    servings: float = Field(gt=0, examples=[1.0])
 
 
 class LoggedFoodPatch(CamelModel):
-    checked: bool | None = None
-    quantity: float | None = Field(default=None, gt=0)
+    checked: bool | None = Field(default=None, examples=[True])
+    quantity: float | None = Field(default=None, gt=0, examples=[45.0])
 
 
 class BulkDeleteRequest(CamelModel):
-    item_ids: list[str]
+    item_ids: list[str] = Field(examples=[["itm_abc", "itm_def"]])
 
 
 class MoveItemsRequest(CamelModel):
-    item_ids: list[str]
+    item_ids: list[str] = Field(examples=[["itm_abc"]])
     to_kind: MealKind
-    to_date: str | None = None  # None = same-day move
+    to_date: str | None = Field(
+        default=None,
+        description="Target date YYYY-MM-DD; omit to move within the same day.",
+        examples=["2026-05-06"],
+    )

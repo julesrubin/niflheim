@@ -18,18 +18,18 @@ from .common import CamelModel
 
 
 class RecipeIngredient(CamelModel):
-    barcode: str
-    quantity: float = Field(gt=0)
+    barcode: str = Field(examples=["3017620422003"])
+    quantity: float = Field(gt=0, examples=[120.0])
 
 
 class Recipe(CamelModel):
-    id: str
-    name: str
-    servings: int = Field(default=2, ge=1)
-    duration_minutes: int | None = Field(default=None, ge=0)
-    difficulty: str = "Facile"
-    emoji: str = ""
-    thumb_bg: str = ""
+    id: str = Field(examples=["rcp_pasta_carbo"])
+    name: str = Field(examples=["Pâtes carbonara"])
+    servings: int = Field(default=2, ge=1, examples=[2])
+    duration_minutes: int | None = Field(default=None, ge=0, examples=[20])
+    difficulty: str = Field(default="Facile", examples=["Facile"])
+    emoji: str = Field(default="", examples=[""])
+    thumb_bg: str = Field(default="", examples=["#F4E1C1"])
     ingredients: list[RecipeIngredient] = Field(default_factory=list)
     cooked: bool = False
 
@@ -48,12 +48,12 @@ class Recipe(CamelModel):
 
 
 class RecipeCreate(CamelModel):
-    name: str
-    servings: int = Field(default=2, ge=1)
-    duration_minutes: int | None = Field(default=None, ge=0)
-    difficulty: str = "Facile"
-    emoji: str = ""
-    thumb_bg: str = ""
+    name: str = Field(examples=["Pâtes carbonara"])
+    servings: int = Field(default=2, ge=1, examples=[2])
+    duration_minutes: int | None = Field(default=None, ge=0, examples=[20])
+    difficulty: str = Field(default="Facile", examples=["Facile"])
+    emoji: str = Field(default="", examples=[""])
+    thumb_bg: str = Field(default="", examples=["#F4E1C1"])
     ingredients: list[RecipeIngredient] = Field(default_factory=list)
     cooked: bool = False
 

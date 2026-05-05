@@ -1,3 +1,5 @@
+from pydantic import Field
+
 from .common import CamelModel, NutriScore, ServingUnit
 
 
@@ -10,24 +12,24 @@ class Food(CamelModel):
     when `serving_size` is set.
     """
 
-    barcode: str
+    barcode: str = Field(examples=["3017620422003"])
 
-    name: str | None = None
-    brand: str | None = None
+    name: str | None = Field(default=None, examples=["Nutella"])
+    brand: str | None = Field(default=None, examples=["Ferrero"])
 
     base_unit: ServingUnit
-    calories: float
-    protein: float
-    carbs: float
-    fat: float
-    fiber: float | None = None
-    sugar: float | None = None
-    salt: float | None = None
+    calories: float = Field(examples=[539.0])
+    protein: float = Field(examples=[6.3])
+    carbs: float = Field(examples=[57.5])
+    fat: float = Field(examples=[30.9])
+    fiber: float | None = Field(default=None, examples=[3.4])
+    sugar: float | None = Field(default=None, examples=[56.3])
+    salt: float | None = Field(default=None, examples=[0.107])
 
-    serving_size: float | None = None
+    serving_size: float | None = Field(default=None, examples=[15.0])
 
     nutri_score: NutriScore | None = None
-    origin: str | None = None
+    origin: str | None = Field(default=None, examples=["France"])
     image_url: str | None = None
 
 

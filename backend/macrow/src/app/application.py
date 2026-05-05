@@ -16,7 +16,7 @@ from .services.journal import JournalRepository
 from .services.off import OffClient
 from .services.recipe import RecipeRepository
 from .services.user import UserRepository
-from .utils.error import EnvelopeHTTPException
+from .utils.error import ERR_AUTH, EnvelopeHTTPException
 
 logger = logging.getLogger(__name__)
 
@@ -90,8 +90,10 @@ def create_app() -> FastAPI:
 
     # Auth-exempt: Cloud Run probes hit /health unauthenticated.
     app.include_router(health.router)
-    # Foods is global (cached OFF data, shared across users) — auth-gated only.
-    app.include_router(foods.router)
+    # Auth-gated routers advertise the 401/403 envelope at the router level
+    # so every nested route inherits the responses block — keeps per-route
+    # `responses=` to the route-specific codes only.
+    app.include_router(foods.router, responses=ERR_AUTH)
 
     # Everything user-scoped lives under /users/{user_id}/... so the path itself
     # carries the identity claim. `owned_user_id` is mounted on the parent
@@ -102,8 +104,8 @@ def create_app() -> FastAPI:
     )
     users_router.include_router(journal.router)
     users_router.include_router(recipe.router)
-    app.include_router(user.router)  # /users/{user_id} (top-level GET/PATCH)
-    app.include_router(users_router)
+    app.include_router(user.router, responses=ERR_AUTH)
+    app.include_router(users_router, responses=ERR_AUTH)
 
     @app.exception_handler(EnvelopeHTTPException)
     async def _envelope_http_exc_handler(

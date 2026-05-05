@@ -9,6 +9,10 @@ class HealthResponse(CamelModel):
     status: str
 
 
-@router.get("/health", response_model=HealthResponse)
+@router.get(
+    "/health",
+    response_model=HealthResponse,
+    summary="Liveness probe (auth-exempt)",
+)
 async def health() -> HealthResponse:
     return HealthResponse(status="ok")

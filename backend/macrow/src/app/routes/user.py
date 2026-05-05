@@ -13,7 +13,6 @@ from fastapi import APIRouter, Depends
 from ..auth import OwnedUserId
 from ..models.user import User, UserPatch
 from ..services.user import UserRepository
-from ..utils.error import ERR_AUTH
 from .deps import get_user_repo
 
 logger = logging.getLogger(__name__)
@@ -21,16 +20,26 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.get("/{user_id}", response_model=User, responses={**ERR_AUTH})
+@router.get(
+    "/{user_id}",
+    response_model=User,
+    summary="Get the user profile and macro goals",
+)
 async def get_user(
     user_id: OwnedUserId,
     repo: UserRepository = Depends(get_user_repo),
 ) -> User:
+    """First-time access lazily creates the doc with default goals, so a
+    fresh device never 404s on the first profile read."""
     doc = await repo.get_or_create(user_id)
     return _to_user(doc)
 
 
-@router.patch("/{user_id}", response_model=User, responses={**ERR_AUTH})
+@router.patch(
+    "/{user_id}",
+    response_model=User,
+    summary="Update the user profile or macro goals",
+)
 async def patch_user(
     body: UserPatch,
     user_id: OwnedUserId,

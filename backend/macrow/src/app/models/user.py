@@ -18,17 +18,17 @@ def _empty_to_none(v: object) -> object:
 
 
 class User(CamelModel):
-    name: str = ""
-    email: EmailStr | None = None
-    age: int = 0
-    weight_kg: int = 0
-    height_cm: int = 0
-    regime: str = ""
+    name: str = Field(default="", examples=["Jules"])
+    email: EmailStr | None = Field(default=None, examples=["jules@example.com"])
+    age: int = Field(default=0, examples=[28])
+    weight_kg: int = Field(default=0, examples=[78])
+    height_cm: int = Field(default=0, examples=[180])
+    regime: str = Field(default="", examples=["high-protein"])
 
-    calorie_goal: int = 2600
-    protein_goal: float = 130.0
-    carbs_goal: float = 320.0
-    fat_goal: float = 80.0
+    calorie_goal: int = Field(default=2600, examples=[2600])
+    protein_goal: float = Field(default=130.0, examples=[130.0])
+    carbs_goal: float = Field(default=320.0, examples=[320.0])
+    fat_goal: float = Field(default=80.0, examples=[80.0])
 
     _empty_email_to_none = field_validator("email", mode="before")(_empty_to_none)
 
@@ -36,16 +36,16 @@ class User(CamelModel):
 class UserPatch(CamelModel):
     """Partial update — only set fields are written."""
 
-    name: str | None = None
-    email: EmailStr | None = None
-    age: int | None = Field(default=None, ge=0)
-    weight_kg: int | None = Field(default=None, ge=0)
-    height_cm: int | None = Field(default=None, ge=0)
-    regime: str | None = None
+    name: str | None = Field(default=None, examples=["Jules"])
+    email: EmailStr | None = Field(default=None, examples=["jules@example.com"])
+    age: int | None = Field(default=None, ge=0, examples=[28])
+    weight_kg: int | None = Field(default=None, ge=0, examples=[78])
+    height_cm: int | None = Field(default=None, ge=0, examples=[180])
+    regime: str | None = Field(default=None, examples=["high-protein"])
 
-    calorie_goal: int | None = Field(default=None, ge=0)
-    protein_goal: float | None = Field(default=None, ge=0)
-    carbs_goal: float | None = Field(default=None, ge=0)
-    fat_goal: float | None = Field(default=None, ge=0)
+    calorie_goal: int | None = Field(default=None, ge=0, examples=[2600])
+    protein_goal: float | None = Field(default=None, ge=0, examples=[130.0])
+    carbs_goal: float | None = Field(default=None, ge=0, examples=[320.0])
+    fat_goal: float | None = Field(default=None, ge=0, examples=[80.0])
 
     _empty_email_to_none = field_validator("email", mode="before")(_empty_to_none)
