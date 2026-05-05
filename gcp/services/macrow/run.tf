@@ -26,6 +26,25 @@ module "cloud_run_services" {
   is_public       = each.value.is_public
   service_account = each.value.service_account
   container_port  = each.value.container_port
+
+  # Bearer-token guard mounted as $BEARER_TOKEN — the FastAPI dep reads
+  # `settings.BEARER_TOKEN` from the env. Secret value is set out-of-band.
+  # First-time bootstrap order:
+  #   terraform apply -target=google_secret_manager_secret.macrow_secrets
+  #   echo -n "<token>" | gcloud secrets versions add niflheim-macrow-bearer-token \
+  #       --data-file=- --project portfolio-jrubin
+  #   terraform apply   # picks up the version, deploys the Cloud Run revision
+  secret_env_vars = {
+    BEARER_TOKEN = {
+      secret = google_secret_manager_secret.macrow_secrets["bearer-token"].secret_id
+    }
+  }
+
+  # Cloud Run revisions fail to start if the runtime SA can't read the secret,
+  # so the IAM grant must exist before the service mounts the env var.
+  depends_on = [
+    google_secret_manager_secret_iam_member.macrow_secret_accessors,
+  ]
 }
 
 resource "google_cloud_run_v2_service_iam_member" "cloud_run_services_invoker" {

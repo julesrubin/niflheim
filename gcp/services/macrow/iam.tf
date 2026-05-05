@@ -18,3 +18,15 @@ resource "google_project_iam_member" "macrow_datastore_user" {
 
   depends_on = [google_firestore_database.macrow]
 }
+
+# Grant the macrow Cloud Run service account read access to its own secrets.
+# `for_each` mirrors the secrets.tf locals map, so adding a new secret there
+# automatically grants the runtime SA access without touching this file.
+resource "google_secret_manager_secret_iam_member" "macrow_secret_accessors" {
+  for_each = google_secret_manager_secret.macrow_secrets
+
+  project   = var.project_id
+  secret_id = each.value.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.service_account["macrow-service"].email}"
+}
