@@ -1,38 +1,42 @@
 """User profile + goals routes.
 
-`/users/me` is the alias for the current user. When auth lands, `me` resolves
-against the token and `/users/{user_id}` joins the surface for cross-user
-fetches — neither the model nor the repository changes, only this layer.
+`/users/{user_id}` is the canonical resource. The bearer-token guard resolves
+to a single user id today; the `owned_user_id` dependency 403s any path that
+doesn't match the token. When auth grows to Firebase, the same dep starts
+returning the verified `uid` claim — the route surface stays put.
 """
 
 import logging
 
 from fastapi import APIRouter, Depends
 
+from ..auth import OwnedUserId
 from ..models.user import User, UserPatch
 from ..services.user import UserRepository
+from ..utils.error import ERR_AUTH
 from .deps import get_user_repo
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/users", tags=["users"])
 
-# Resolved against the auth token once auth lands; for now a fixed string.
-CURRENT_USER_ID = "me"
 
-
-@router.get("/me", response_model=User)
-async def get_current_user(repo: UserRepository = Depends(get_user_repo)) -> User:
-    doc = await repo.get_or_create(CURRENT_USER_ID)
+@router.get("/{user_id}", response_model=User, responses={**ERR_AUTH})
+async def get_user(
+    user_id: OwnedUserId,
+    repo: UserRepository = Depends(get_user_repo),
+) -> User:
+    doc = await repo.get_or_create(user_id)
     return _to_user(doc)
 
 
-@router.patch("/me", response_model=User)
-async def patch_current_user(
+@router.patch("/{user_id}", response_model=User, responses={**ERR_AUTH})
+async def patch_user(
     body: UserPatch,
+    user_id: OwnedUserId,
     repo: UserRepository = Depends(get_user_repo),
 ) -> User:
-    doc = await repo.patch(CURRENT_USER_ID, body)
+    doc = await repo.patch(user_id, body)
     return _to_user(doc)
 
 

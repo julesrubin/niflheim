@@ -12,6 +12,7 @@ from enum import StrEnum
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
+from ..auth import current_user_id
 from ..config.constants import (
     DEFAULT_SEARCH_LIMIT,
     MAX_SEARCH_LIMIT,
@@ -32,7 +33,11 @@ from .deps import get_food_repo, get_off
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/foods", tags=["foods"])
+# Foods is global cache, not user-scoped — we still gate it behind auth so the
+# OFF passthrough isn't a free egress proxy, but skip the owns check.
+router = APIRouter(
+    prefix="/foods", tags=["foods"], dependencies=[Depends(current_user_id)]
+)
 
 
 class SearchSource(StrEnum):
