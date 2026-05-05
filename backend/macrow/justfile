@@ -53,13 +53,23 @@ pre-commit: format lint test
 # Smoke test the API end-to-end against a running instance.
 # Defaults to local; pass a base URL to hit the deployed service:
 #   just macrow::smoke https://julesrubin.com/macrow
+# Token is read from MACROW_TOKEN, or sourced from .macrow.env if present.
 [group('quality')]
 smoke base_url="http://127.0.0.1:8000/macrow":
     #!/usr/bin/env bash
     set -euo pipefail
     cd {{ source_directory() }}
+    if [ -z "${MACROW_TOKEN:-}" ] && [ -f .macrow.env ]; then
+        # shellcheck disable=SC1091
+        set -a; . ./.macrow.env; set +a
+    fi
+    if [ -z "${MACROW_TOKEN:-}" ]; then
+        echo "✗ MACROW_TOKEN is not set. Export it or add MACROW_TOKEN=... to backend/macrow/.macrow.env" >&2
+        exit 2
+    fi
     export MACROW_BASE_URL="{{ base_url }}"
-    echo "Smoking $MACROW_BASE_URL ..."
+    echo "Smoking $MACROW_BASE_URL as user '${USER_ID:-me}' ..."
+    bash scripts/0_auth.sh
     bash scripts/health.sh
     bash scripts/users.sh
     bash scripts/foods.sh

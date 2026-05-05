@@ -17,12 +17,14 @@ expect_status 200
 RECIPE_ID=""
 cleanup() {
     [ -n "$RECIPE_ID" ] || return 0
-    curl -sS -X DELETE "$BASE_URL/recipes/$RECIPE_ID" >/dev/null 2>&1 || true
+    curl -sS -X DELETE \
+        -H "Authorization: Bearer $MACROW_TOKEN" \
+        "$BASE_URL/users/$USER_ID/recipes/$RECIPE_ID" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
-section "POST /recipes (servings=2, 50g of Nutella)"
-req POST /recipes \
+section "POST /users/$USER_ID/recipes (servings=2, 50g of Nutella)"
+req POST /users/$USER_ID/recipes \
   "{\"name\":\"Smoke Toast\",\"servings\":2,\"emoji\":\"🍞\",\"ingredients\":[{\"barcode\":\"$BARCODE\",\"quantity\":50}]}"
 expect_status 200
 echo "$BODY" | jq '{id,name,servings,caloriesPerServing,proteinPerServing,carbsPerServing,fatPerServing,nutritionComplete}'
@@ -31,18 +33,18 @@ CAL_2=$(echo "$BODY" | jq -r .caloriesPerServing)
 [ "$CAL_2" -gt 0 ] || fail "caloriesPerServing was not derived"
 [ "$(echo "$BODY" | jq -r .nutritionComplete)" = "true" ] || fail "nutritionComplete should be true"
 
-section "GET /recipes (list with macros)"
-req GET /recipes
+section "GET /users/$USER_ID/recipes (list with macros)"
+req GET /users/$USER_ID/recipes
 expect_status 200
 echo "$BODY" | jq '[.[] | {id, name, caloriesPerServing}] | .[0:3]'
 
-section "GET /recipes/$RECIPE_ID (single fetch)"
-req GET "/recipes/$RECIPE_ID"
+section "GET /users/$USER_ID/recipes/$RECIPE_ID (single fetch)"
+req GET "/users/$USER_ID/recipes/$RECIPE_ID"
 expect_status 200
 [ "$(echo "$BODY" | jq -r .id)" = "$RECIPE_ID" ] || fail "wrong id echoed"
 
-section "PATCH /recipes/$RECIPE_ID (servings 2 → 4, macros must halve)"
-req PATCH "/recipes/$RECIPE_ID" '{"servings":4}'
+section "PATCH /users/$USER_ID/recipes/$RECIPE_ID (servings 2 → 4, macros must halve)"
+req PATCH "/users/$USER_ID/recipes/$RECIPE_ID" '{"servings":4}'
 expect_status 200
 echo "$BODY" | jq '{servings, caloriesPerServing, proteinPerServing, carbsPerServing, fatPerServing}'
 CAL_4=$(echo "$BODY" | jq -r .caloriesPerServing)
@@ -53,19 +55,19 @@ if [ "$CAL_4" -gt $((EXPECTED + 1)) ] || [ "$CAL_4" -lt $((EXPECTED - 1)) ]; the
 fi
 pass "macros recomputed correctly after servings change"
 
-section "PATCH /recipes/$RECIPE_ID with explicit nulls (must no-op)"
-req PATCH "/recipes/$RECIPE_ID" '{"name":null,"emoji":null}'
+section "PATCH /users/$USER_ID/recipes/$RECIPE_ID with explicit nulls (must no-op)"
+req PATCH "/users/$USER_ID/recipes/$RECIPE_ID" '{"name":null,"emoji":null}'
 expect_status 200
 [ "$(echo "$BODY" | jq -r .name)" = "Smoke Toast" ] || fail "name was overwritten by null"
 
-section "DELETE /recipes/$RECIPE_ID (twice — must be idempotent)"
-req DELETE "/recipes/$RECIPE_ID"
+section "DELETE /users/$USER_ID/recipes/$RECIPE_ID (twice — must be idempotent)"
+req DELETE "/users/$USER_ID/recipes/$RECIPE_ID"
 expect_status 204
-req DELETE "/recipes/$RECIPE_ID"
+req DELETE "/users/$USER_ID/recipes/$RECIPE_ID"
 expect_status 204
 
-section "GET /recipes/$RECIPE_ID after delete (must 404)"
-req GET "/recipes/$RECIPE_ID"
+section "GET /users/$USER_ID/recipes/$RECIPE_ID after delete (must 404)"
+req GET "/users/$USER_ID/recipes/$RECIPE_ID"
 expect_status 404
 
 RECIPE_ID=""  # cleanup no-op
