@@ -26,7 +26,7 @@ trap cleanup EXIT
 section "POST /users/$USER_ID/recipes (servings=2, 50g of Nutella)"
 req POST /users/$USER_ID/recipes \
   "{\"name\":\"Smoke Toast\",\"servings\":2,\"emoji\":\"🍞\",\"ingredients\":[{\"barcode\":\"$BARCODE\",\"quantity\":50}]}"
-expect_status 200
+expect_status 201
 echo "$BODY" | jq '{id,name,servings,caloriesPerServing,proteinPerServing,carbsPerServing,fatPerServing,nutritionComplete}'
 RECIPE_ID=$(echo "$BODY" | jq -r .id)
 CAL_2=$(echo "$BODY" | jq -r .caloriesPerServing)
